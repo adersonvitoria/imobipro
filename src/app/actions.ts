@@ -18,7 +18,8 @@ export async function rodarAgora() {
 }
 
 const PROXIMA: Record<string, string> = {
-  FICHA_APROVADA: "CONTRATO_ASSINADO",
+  FICHA_APROVADA: "ASSINATURA",
+  ASSINATURA: "CONTRATO_ASSINADO",
   CONTRATO_ASSINADO: "VISTORIA",
   VISTORIA: "CHAVES_PRONTAS",
   CHAVES_PRONTAS: "ATIVO",
@@ -26,6 +27,7 @@ const PROXIMA: Record<string, string> = {
 
 const ROTULO: Record<string, string> = {
   FICHA_APROVADA: "Ficha aprovada",
+  ASSINATURA: "Contrato p/ assinatura",
   CONTRATO_ASSINADO: "Contrato assinado",
   VISTORIA: "Vistoria",
   CHAVES_PRONTAS: "Chaves prontas",
@@ -112,7 +114,7 @@ export async function iniciarDesocupacao(contratoId: string) {
   await db.contrato.update({ where: { id: contratoId }, data: { etapa: "DESOCUPACAO" } });
   await db.evento.create({ data: { contratoId, titulo: "Processo de desocupação iniciado" } });
 
-  const adm = await db.membro.findFirst({ where: { papel: "ADMINISTRATIVO", ativo: true } });
+  const adm = await db.membro.findFirst({ where: { papel: "VISTORIA", ativo: true } });
   if (adm) {
     await db.tarefa.create({
       data: {
@@ -194,9 +196,10 @@ export async function alternarTarefa(id: string) {
 const SETOR_PAPEL: Record<string, { papel: string; rotulo: string }> = {
   boleto: { papel: "FINANCEIRO", rotulo: "2ª via de boleto" },
   manutencao: { papel: "VISTORIA", rotulo: "Manutenção" },
-  desocupacao: { papel: "ADMINISTRATIVO", rotulo: "Desocupação" },
+  desocupacao: { papel: "VISTORIA", rotulo: "Desocupação" },
   repasse: { papel: "FINANCEIRO", rotulo: "Repasse ao proprietário" },
   chaves: { papel: "ADMINISTRATIVO", rotulo: "Entrega de chaves" },
+  contrato: { papel: "CONTRATOS", rotulo: "Contratos e assinaturas" },
 };
 
 /** Recepção IA: cria chamado real (tarefa + notificação interna) para o setor certo */
@@ -227,6 +230,117 @@ export async function criarChamado(setor: string, nomeCliente: string, resumo: s
 
   revalidarTudo();
   return { ok: true, responsavel: membro.nome };
+}
+
+const SINISTRO_ROTULO: Record<string, string> = {
+  ABERTO: "aberto na seguradora",
+  EM_ANALISE: "em análise",
+  DEFERIDO: "deferido — pagamento programado",
+  PAGO: "pago",
+};
+
+/** Recepção IA: consulta o status do sinistro de seguro-fiança e avisa o proprietário */
+export async function consultarSinistro(nomeCliente: string) {
+  const s = await db.sinistro.findFirst({
+    where: { status: { in: ["ABERTO", "EM_ANALISE", "DEFERIDO"] } },
+    orderBy: { abertoEm: "desc" },
+  });
+  if (!s) return { ok: false as const };
+
+  const { spToday, primeiroNome } = await import("@/lib/dates");
+  const { render } = await import("@/lib/templates");
+  const cfg = await db.config.findFirstOrThrow();
+  const regra = await db.regra.findUnique({ where: { tipo: "SINISTRO_STATUS" } });
+  const seguradora = s.seguradora === "LOFT" ? "Loft" : "Porto Seguro";
+  const statusRotulo = SINISTRO_ROTULO[s.status] ?? s.status;
+  const dias = Math.max(0, Math.round((Date.now() - s.abertoEm.getTime()) / 86400000));
+
+  if (regra?.ativo) {
+    await despachar({
+      regraTipo: regra.tipo,
+      regraNome: regra.nome,
+      paraNome: s.proprietario,
+      paraZap: s.proprietarioZap,
+      paraTipo: "PROPRIETARIO",
+      origem: "RECEPCAO",
+      dedupeKey: `SINISTRO_STATUS:${s.id}:${spToday()}`,
+      conteudo: render(regra.template, {
+        proprietario: primeiroNome(s.proprietario),
+        imovel: s.imovel,
+        seguradora,
+        protocolo: s.protocolo,
+        status: statusRotulo,
+        previsao: `até ${s.previsaoDias} dias`,
+        imobiliaria: cfg.imobiliaria,
+      }),
+    });
+  }
+
+  revalidarTudo();
+  return {
+    ok: true as const,
+    imovel: s.imovel,
+    proprietario: s.proprietario,
+    seguradora,
+    protocolo: s.protocolo,
+    status: statusRotulo,
+    previsaoDias: s.previsaoDias,
+    dias,
+  };
+}
+
+const COBRANCA_ROTULO: Record<string, string> = {
+  COBRANCA_INICIADA: "cobrança iniciada",
+  AVISO_FORMAL: "aviso formal enviado",
+  NEGOCIACAO: "em negociação com o inquilino",
+  JURIDICO: "encaminhada ao jurídico",
+  REGULARIZADO: "regularizada",
+};
+
+/** Recepção IA: consulta a cobrança em andamento e avisa o proprietário */
+export async function consultarCobranca() {
+  const c = await db.cobranca.findFirst({
+    where: { status: { not: "REGULARIZADO" } },
+    orderBy: { iniciadaEm: "desc" },
+  });
+  if (!c) return { ok: false as const };
+
+  const { spToday, primeiroNome, fmtCurto, brl } = await import("@/lib/dates");
+  const { render } = await import("@/lib/templates");
+  const cfg = await db.config.findFirstOrThrow();
+  const regra = await db.regra.findUnique({ where: { tipo: "COBRANCA_STATUS" } });
+  const statusRotulo = COBRANCA_ROTULO[c.status] ?? c.status;
+  const previsao = c.previsaoPagamento ? `até ${fmtCurto(c.previsaoPagamento)}` : "em definição";
+
+  if (regra?.ativo) {
+    await despachar({
+      regraTipo: regra.tipo,
+      regraNome: regra.nome,
+      paraNome: c.proprietario,
+      paraZap: c.proprietarioZap,
+      paraTipo: "PROPRIETARIO",
+      origem: "RECEPCAO",
+      dedupeKey: `COBRANCA_STATUS:${c.id}:${spToday()}`,
+      conteudo: render(regra.template, {
+        proprietario: primeiroNome(c.proprietario),
+        imovel: c.imovel,
+        status: statusRotulo,
+        valor: brl(c.valor),
+        previsao,
+        imobiliaria: cfg.imobiliaria,
+      }),
+    });
+  }
+
+  revalidarTudo();
+  return {
+    ok: true as const,
+    imovel: c.imovel,
+    inquilino: c.inquilino,
+    status: statusRotulo,
+    valor: c.valor,
+    previsao,
+  };
 }
 
 /** Analista IA: responde perguntas sobre a operação com snapshot ao vivo do banco */

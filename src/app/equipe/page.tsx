@@ -11,9 +11,11 @@ export const dynamic = "force-dynamic";
 
 const PAPEL: Record<string, string> = {
   CORRETOR: "Corretor",
+  CONTRATOS: "Contratos",
   ADMINISTRATIVO: "Administrativo",
   FINANCEIRO: "Financeiro",
-  VISTORIA: "Vistorias & manutenção",
+  VISTORIA: "Desocupação & manutenção",
+  JURIDICO: "Jurídico · sócio",
   GESTAO: "Gestão",
 };
 

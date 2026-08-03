@@ -12,6 +12,7 @@ import {
   LogOut,
   PenLine,
   Plus,
+  Send,
   X,
 } from "lucide-react";
 import { avancarEtapa, criarContrato, iniciarDesocupacao } from "@/app/actions";
@@ -39,6 +40,7 @@ type MembroOpcao = { id: string; nome: string };
 
 const COLUNAS: { etapa: string; titulo: string }[] = [
   { etapa: "FICHA_APROVADA", titulo: "Ficha aprovada" },
+  { etapa: "ASSINATURA", titulo: "Assinatura" },
   { etapa: "CONTRATO_ASSINADO", titulo: "Contrato assinado" },
   { etapa: "VISTORIA", titulo: "Vistoria" },
   { etapa: "CHAVES_PRONTAS", titulo: "Chaves prontas" },
@@ -47,7 +49,8 @@ const COLUNAS: { etapa: string; titulo: string }[] = [
 ];
 
 const ACAO: Record<string, { rotulo: string; icon: typeof PenLine } | null> = {
-  FICHA_APROVADA: { rotulo: "Assinar contrato", icon: PenLine },
+  FICHA_APROVADA: { rotulo: "Enviar p/ assinatura", icon: Send },
+  ASSINATURA: { rotulo: "Confirmar assinaturas", icon: PenLine },
   CONTRATO_ASSINADO: { rotulo: "Agendar vistoria", icon: ClipboardList },
   VISTORIA: { rotulo: "Chaves prontas", icon: KeyRound },
   CHAVES_PRONTAS: { rotulo: "Confirmar entrega", icon: Home },
@@ -56,7 +59,8 @@ const ACAO: Record<string, { rotulo: string; icon: typeof PenLine } | null> = {
 };
 
 const ORDEM_ETAPA: Record<string, string> = {
-  FICHA_APROVADA: "CONTRATO_ASSINADO",
+  FICHA_APROVADA: "ASSINATURA",
+  ASSINATURA: "CONTRATO_ASSINADO",
   CONTRATO_ASSINADO: "VISTORIA",
   VISTORIA: "CHAVES_PRONTAS",
   CHAVES_PRONTAS: "ATIVO",
@@ -128,7 +132,7 @@ export default function Kanban({
         toast.success("Desocupação iniciada", {
           description:
             r.disparadas.length > 0
-              ? `${r.disparadas.join(", ")} já foi avisado no WhatsApp — e Marilice recebeu a tarefa.`
+              ? `${r.disparadas.join(", ")} já foi avisado no WhatsApp — e a equipe de desocupação recebeu a tarefa.`
               : "Processo registrado.",
         });
         router.refresh();
@@ -306,7 +310,7 @@ function ModalNovoContrato({ corretores, fechar }: { corretores: MembroOpcao[]; 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-[1.2rem]">Novo contrato</h3>
+          <h3 className="font-display text-[1.2rem]">Ficha digital — cadastro único</h3>
           <button className="text-ink-3 hover:text-ink" onClick={fechar}>
             <X size={17} />
           </button>
@@ -338,8 +342,10 @@ function ModalNovoContrato({ corretores, fechar }: { corretores: MembroOpcao[]; 
         <button className="btn-brand mt-5 w-full justify-center" disabled={pendente} onClick={salvar}>
           {pendente ? "Criando e disparando WhatsApp…" : "Aprovar ficha + disparar boas-vindas"}
         </button>
-        <p className="mt-2.5 text-center text-[0.66rem] text-ink-3">
-          O inquilino recebe a confirmação de ficha aprovada automaticamente.
+        <p className="mt-2.5 text-center text-[0.66rem] text-ink-3 leading-relaxed">
+          Preenche 1 vez e pronto: substitui os 3 cadastros de hoje (sistema + ficha de papel +
+          grupo de WhatsApp). Cai conferido para a Paola, o jurídico aprova e a assinatura dispara
+          sozinha.
         </p>
       </motion.div>
     </div>

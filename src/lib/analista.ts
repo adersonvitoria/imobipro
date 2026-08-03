@@ -15,6 +15,7 @@ import {
 
 const ETAPA_ROTULO: Record<string, string> = {
   FICHA_APROVADA: "Ficha aprovada",
+  ASSINATURA: "Assinatura",
   CONTRATO_ASSINADO: "Contrato assinado",
   VISTORIA: "Vistoria",
   CHAVES_PRONTAS: "Chaves prontas",
@@ -53,6 +54,30 @@ export type Snapshot = {
   };
   chamadosHoje: number;
   regrasDesligadas: string[];
+  sinistros: {
+    abertos: {
+      imovel: string;
+      proprietario: string;
+      seguradora: string;
+      status: string;
+      protocolo: string;
+      dias: number;
+      previsaoDias: number;
+    }[];
+    concluidos: number;
+  };
+  cobrancas: {
+    abertas: {
+      inquilino: string;
+      imovel: string;
+      proprietario: string;
+      status: string;
+      valor: number;
+      previsao: string;
+      dias: number;
+    }[];
+    regularizadas: number;
+  };
   financeiro: {
     receberAberto: number;
     pagarAberto: number;
@@ -78,8 +103,19 @@ export async function coletarSnapshot(): Promise<Snapshot> {
   const inicioOntem = new Date(`${addDays(hoje, -1)}T00:00:00-03:00`);
   const inicio7 = new Date(`${addDays(hoje, -6)}T00:00:00-03:00`);
 
-  const [contratos, tarefasHoje, msgsHoje, msgsOntem, msgs7, regras, chamadosHoje, lancAbertos, notasAll] =
-    await Promise.all([
+  const [
+    contratos,
+    tarefasHoje,
+    msgsHoje,
+    msgsOntem,
+    msgs7,
+    regras,
+    chamadosHoje,
+    lancAbertos,
+    notasAll,
+    sinistrosAll,
+    cobrancasAll,
+  ] = await Promise.all([
       db.contrato.findMany({ include: { respEntrega: true } }),
       db.tarefa.findMany({ where: { data: hoje }, include: { responsavel: true }, orderBy: { hora: "asc" } }),
       db.mensagem.findMany({
@@ -93,11 +129,13 @@ export async function coletarSnapshot(): Promise<Snapshot> {
       db.mensagem.count({ where: { origem: "RECEPCAO", criadaEm: { gte: inicioHoje } } }),
       db.lancamento.findMany({ where: { status: "ABERTO" }, orderBy: { vencimento: "asc" } }),
       db.notaFiscal.findMany(),
+      db.sinistro.findMany({ orderBy: { abertoEm: "desc" } }),
+      db.cobranca.findMany({ orderBy: { iniciadaEm: "desc" } }),
     ]);
 
   const ativos = contratos.filter((c) => c.etapa === "ATIVO");
   const esteira = contratos.filter((c) =>
-    ["FICHA_APROVADA", "CONTRATO_ASSINADO", "VISTORIA", "CHAVES_PRONTAS"].includes(c.etapa)
+    ["FICHA_APROVADA", "ASSINATURA", "CONTRATO_ASSINADO", "VISTORIA", "CHAVES_PRONTAS"].includes(c.etapa)
   );
   const valorMes = ativos.reduce((s, c) => s + c.valor, 0);
 
@@ -203,11 +241,56 @@ export async function coletarSnapshot(): Promise<Snapshot> {
   const nfEmitidas = notasAll.filter((n) => n.status === "EMITIDA" && n.competencia === compet);
   const nfPendentes = notasAll.filter((n) => n.status === "PENDENTE");
 
+  // sinistros de seguro-fiança
+  const ROT_SINISTRO: Record<string, string> = {
+    ABERTO: "aberto na seguradora",
+    EM_ANALISE: "em análise",
+    DEFERIDO: "deferido — pagamento programado",
+    PAGO: "pago",
+  };
+  const ROT_COBRANCA: Record<string, string> = {
+    COBRANCA_INICIADA: "cobrança iniciada",
+    AVISO_FORMAL: "aviso formal enviado",
+    NEGOCIACAO: "em negociação",
+    JURIDICO: "no jurídico",
+    REGULARIZADO: "regularizada",
+  };
+  const cobAbertas = cobrancasAll
+    .filter((c) => c.status !== "REGULARIZADO")
+    .map((c) => ({
+      inquilino: c.inquilino,
+      imovel: c.imovel,
+      proprietario: c.proprietario,
+      status: ROT_COBRANCA[c.status] ?? c.status,
+      valor: c.valor,
+      previsao: c.previsaoPagamento ? `até ${fmtCurto(c.previsaoPagamento)}` : "em definição",
+      dias: Math.max(0, Math.round((Date.now() - c.iniciadaEm.getTime()) / 86400000)),
+    }));
+
+  const sinAbertos = sinistrosAll
+    .filter((s) => s.status !== "PAGO")
+    .map((s) => ({
+      imovel: s.imovel,
+      proprietario: s.proprietario,
+      seguradora: s.seguradora === "LOFT" ? "Loft" : "Porto Seguro",
+      status: ROT_SINISTRO[s.status] ?? s.status,
+      protocolo: s.protocolo,
+      dias: Math.max(0, Math.round((Date.now() - s.abertoEm.getTime()) / 86400000)),
+      previsaoDias: s.previsaoDias,
+    }));
+
   return {
     hoje,
     geradoEm: agoraHM,
     registros:
-      contratos.length + tarefasHoje.length + msgsHoje.length + regras.length + lancAbertos.length + notasAll.length,
+      contratos.length +
+      tarefasHoje.length +
+      msgsHoje.length +
+      regras.length +
+      lancAbertos.length +
+      notasAll.length +
+      sinistrosAll.length +
+      cobrancasAll.length,
     carteira: {
       ativos: ativos.length,
       valorMes,
@@ -246,6 +329,14 @@ export async function coletarSnapshot(): Promise<Snapshot> {
     },
     chamadosHoje,
     regrasDesligadas,
+    sinistros: {
+      abertos: sinAbertos,
+      concluidos: sinistrosAll.length - sinAbertos.length,
+    },
+    cobrancas: {
+      abertas: cobAbertas,
+      regularizadas: cobrancasAll.length - cobAbertas.length,
+    },
     financeiro: {
       receberAberto: soma(receber),
       pagarAberto: soma(pagar),
@@ -322,6 +413,20 @@ export function respostaResumo(s: Snapshot): string {
       `\n📦 *Desocupações:* ${s.desocupacoes.length} em acompanhamento (${s.desocupacoes
         .map((d) => `${d.imovel} — ${d.proprietario}`)
         .join("; ")}). Proprietário recebe cada etapa por mensagem.`
+    );
+  }
+
+  if (s.sinistros.abertos.length > 0) {
+    const sin = s.sinistros.abertos[0];
+    partes.push(
+      `\n🛡 *Sinistros:* ${s.sinistros.abertos.length} em andamento (${sin.seguradora} · *${sin.status}* há ${sin.dias} dias, previsão até ${sin.previsaoDias} dias) — o proprietário é informado automaticamente.`
+    );
+  }
+
+  if (s.cobrancas.abertas.length > 0) {
+    const cob = s.cobrancas.abertas[0];
+    partes.push(
+      `\n📢 *Cobranças:* ${s.cobrancas.abertas.length} em andamento (${primeiroNome(cob.inquilino)} · *${cob.status}* · previsão ${cob.previsao}) — ${cob.proprietario} recebe cada movimento.`
     );
   }
 
@@ -492,6 +597,51 @@ export function respostaNotas(s: Snapshot): string {
   return partes.join("") + rodape(s);
 }
 
+export function respostaCobrancas(s: Snapshot): string {
+  const partes: string[] = [`📢 *Cobranças de inadimplência*`];
+  if (s.cobrancas.abertas.length > 0) {
+    partes.push(`\n*Em andamento (${s.cobrancas.abertas.length}):*`);
+    for (const c of s.cobrancas.abertas) {
+      partes.push(
+        `\n  • *${c.imovel}* — inquilino ${primeiroNome(c.inquilino)} · ${brl(c.valor)} em aberto` +
+          `\n    Status: *${c.status}* há ${c.dias} dias · previsão de regularização: ${c.previsao}` +
+          `\n    Proprietário ${c.proprietario} é avisado a cada movimento.`
+      );
+    }
+  } else {
+    partes.push(`\nNenhuma cobrança em andamento. ✅`);
+  }
+  if (s.cobrancas.regularizadas > 0) {
+    partes.push(`\n\nRegularizadas no histórico: ${s.cobrancas.regularizadas}.`);
+  }
+  partes.push(
+    `\n\nA esteira evolui sozinha: cobrança iniciada → aviso formal → negociação → jurídico. O proprietário nunca fica sem saber em que pé está — e o repasse sai no dia em que o pagamento entra.`
+  );
+  return partes.join("") + rodape(s);
+}
+
+export function respostaSinistros(s: Snapshot): string {
+  const partes: string[] = [`🛡 *Seguro-fiança — sinistros*`];
+  if (s.sinistros.abertos.length > 0) {
+    partes.push(`\n*Em andamento (${s.sinistros.abertos.length}):*`);
+    for (const sin of s.sinistros.abertos) {
+      partes.push(
+        `\n  • *${sin.imovel}* — ${sin.proprietario}` +
+          `\n    ${sin.seguradora} · protocolo ${sin.protocolo} · *${sin.status}* há ${sin.dias} dias · previsão: até ${sin.previsaoDias} dias`
+      );
+    }
+  } else {
+    partes.push(`\nNenhum sinistro em andamento. ✅`);
+  }
+  if (s.sinistros.concluidos > 0) {
+    partes.push(`\n\nConcluídos no histórico: ${s.sinistros.concluidos}.`);
+  }
+  partes.push(
+    `\n\n90% das cobranças de proprietário somem quando o status chega sozinho: a Recepção IA responde na hora e a régua avisa a cada mudança — na versão final, direto da API da Loft/Porto Seguro.`
+  );
+  return partes.join("") + rodape(s);
+}
+
 export function respostaEquipe(s: Snapshot): string {
   const t = s.tarefas;
   const partes: string[] = [`👥 *Carga da equipe — hoje*`];
@@ -569,6 +719,18 @@ export function respostaRiscos(s: Snapshot): string {
         .map((p) => p.tomador)
         .join(", ")}).`
     );
+  if (s.sinistros.abertos.length > 0)
+    alertas.push(
+      `🟡 ${s.sinistros.abertos.length} sinistro(s) de seguro-fiança em andamento (${s.sinistros.abertos
+        .map((x) => `${x.protocolo} há ${x.dias} dias`)
+        .join(" · ")}) — proprietários sendo atualizados automaticamente.`
+    );
+  if (s.cobrancas.abertas.length > 0)
+    alertas.push(
+      `🟠 ${s.cobrancas.abertas.length} cobrança(s) de inadimplência em andamento (${s.cobrancas.abertas
+        .map((x) => `${primeiroNome(x.inquilino)}: ${x.status}`)
+        .join(" · ")}).`
+    );
 
   const partes = [`🚨 *Riscos e pendências agora*`];
   partes.push(alertas.length > 0 ? `\n${alertas.map((a) => `\n${a}`).join("")}` : `\n\n✅ Nenhum alerta crítico. Operação redonda.`);
@@ -583,6 +745,8 @@ function respostaAjuda(s: Snapshot): string {
     `\n  • *"Situação dos proprietários"* — desocupações e repasses` +
     `\n  • *"Financeiro e boletos"* — carteira, contas a pagar/receber e saldo` +
     `\n  • *"Notas fiscais"* — NFS-e emitidas e pendentes` +
+    `\n  • *"Sinistros"* — seguro-fiança: status, protocolo e previsão` +
+    `\n  • *"Cobranças"* — inadimplência: esteira, status e previsão` +
     `\n  • *"Carga da equipe"* — quem está com o quê` +
     `\n  • *"Disparos de hoje"* — comunicação automática` +
     `\n  • *"Riscos e pendências"* — o que merece atenção` +
@@ -602,6 +766,8 @@ export function responder(pergunta: string, s: Snapshot): string {
   const tem = (...ks: string[]) => ks.some((k) => p.includes(k));
 
   if (tem("nota", "nfs", "fiscal", "imposto", "emissao", "emitir")) return respostaNotas(s);
+  if (tem("cobranc", "inadimpl", "juridic", "calote", "devedor", "nao pagou")) return respostaCobrancas(s);
+  if (tem("sinistro", "seguradora", "seguro", "loft", "porto", "fianca")) return respostaSinistros(s);
   if (tem("entrega", "chave", "retirada", "vistoria")) return respostaEntregas(s);
   if (tem("proprietario", "dono do imovel", "repasse", "desocupacao", "milton")) return respostaProprietarios(s);
   if (tem("financeiro", "boleto", "venciment", "receita", "carteira", "faturamento", "dinheiro", "aluguel", "inadimpl", "valor", "pagar", "receber", "contas", "caixa", "fluxo", "saldo", "vencid")) return respostaFinanceiro(s);
@@ -627,6 +793,20 @@ export function resumoBoletim(s: Snapshot): string {
   if (s.vistorias.length > 0)
     linhas.push(`📋 Vistorias: ${s.vistorias.map((v) => `${v.data} ${v.hora}`).join(" · ")}`);
   linhas.push(`📦 Desocupações em acompanhamento: ${s.desocupacoes.length}`);
+  if (s.sinistros.abertos.length > 0) {
+    linhas.push(
+      `🛡 Sinistros em andamento: ${s.sinistros.abertos.length} (${s.sinistros.abertos
+        .map((x) => `${x.seguradora} · ${x.status}`)
+        .join(" · ")})`
+    );
+  }
+  if (s.cobrancas.abertas.length > 0) {
+    linhas.push(
+      `📢 Cobranças em andamento: ${s.cobrancas.abertas.length} (${s.cobrancas.abertas
+        .map((x) => `${primeiroNome(x.inquilino)} · ${x.status}`)
+        .join(" · ")})`
+    );
+  }
   linhas.push(`💳 Boletos vencendo em 5 dias: ${s.boletos.length}`);
   linhas.push(`💰 Carteira ativa: ${brl(s.carteira.valorMes)}/mês (${s.carteira.ativos} contratos)`);
   linhas.push(

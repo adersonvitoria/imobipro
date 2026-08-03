@@ -59,6 +59,41 @@ model Contrato {
   tarefas         Tarefa[]
   lancamentos     Lancamento[]
   notas           NotaFiscal[]
+  sinistros       Sinistro[]
+  cobrancas       Cobranca[]
+}
+
+// Esteira de cobrança de inadimplência
+model Cobranca {
+  id                 String    @id @default(cuid())
+  inquilino          String
+  imovel             String
+  proprietario       String
+  proprietarioZap    String
+  valor              Int
+  status             String // COBRANCA_INICIADA | AVISO_FORMAL | NEGOCIACAO | JURIDICO | REGULARIZADO
+  previsaoPagamento  String? // YYYY-MM-DD
+  iniciadaEm         DateTime  @default(now())
+  atualizadoEm       DateTime  @updatedAt
+  contratoId         String?
+  contrato           Contrato? @relation(fields: [contratoId], references: [id])
+}
+
+// Sinistros de seguro-fiança (Loft / Porto Seguro)
+model Sinistro {
+  id              String    @id @default(cuid())
+  seguradora      String // LOFT | PORTO
+  tipo            String // INADIMPLENCIA | DANOS
+  status          String // ABERTO | EM_ANALISE | DEFERIDO | PAGO
+  protocolo       String
+  previsaoDias    Int       @default(90)
+  imovel          String
+  proprietario    String
+  proprietarioZap String
+  abertoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+  contratoId      String?
+  contrato        Contrato? @relation(fields: [contratoId], references: [id])
 }
 
 // Contas a pagar e a receber

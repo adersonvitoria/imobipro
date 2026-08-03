@@ -4,18 +4,39 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { RotateCcw, SendHorizonal } from "lucide-react";
-import { criarChamado } from "@/app/actions";
+import { consultarCobranca, consultarSinistro, criarChamado } from "@/app/actions";
 import { Celular, WaBolha } from "@/components/wa";
 
 type Msg = { de: "bot" | "user"; texto: string; hora: string };
-type Fase = "menu" | "nome" | "detalhe" | "fim";
+type Fase = "menu" | "nome" | "detalhe" | "faq" | "fim";
+
+const FAQS = [
+  {
+    q: "Como troco o titular do contrato?",
+    a: "É simples! Alterações de contrato são com a *Paola*. Me confirma o número do contrato (ou seu nome completo) que eu já abro a solicitação — o aditivo chega pra você assinar digitalmente, sem precisar vir na loja. 📝",
+  },
+  {
+    q: "Quando cai o repasse do proprietário?",
+    a: "O repasse é processado todo *dia 5* e cai em conta em até 1 dia útil. Se o aluguel do mês atrasar, você recebe automaticamente o status da cobrança — sem precisar perguntar. 💰",
+  },
+  {
+    q: "Como abro chamado de manutenção?",
+    a: "Direto por aqui! Escolhe *Manutenção / reparo* no menu, descreve o problema em uma frase e a *Aline* recebe o chamado na hora, com retorno ainda hoje. 🔧",
+  },
+  {
+    q: "Qual o prazo do caução?",
+    a: "Após a vistoria de saída aprovada, a devolução do caução acontece em até *30 dias*, com correção. Você acompanha cada etapa por aqui. 🤝",
+  },
+];
 
 const OPCOES = [
   { chave: "boleto", rotulo: "💳 2ª via de boleto" },
   { chave: "manutencao", rotulo: "🔧 Manutenção / reparo" },
   { chave: "desocupacao", rotulo: "📦 Desocupação" },
+  { chave: "sinistro", rotulo: "🛡 Status de sinistro (seguro-fiança)" },
   { chave: "repasse", rotulo: "💰 Sou proprietário — repasse" },
   { chave: "chaves", rotulo: "🔑 Entrega de chaves" },
+  { chave: "faq", rotulo: "❓ Dúvidas rápidas" },
 ] as const;
 
 const SAUDACAO =
@@ -75,9 +96,19 @@ export default function RecepcaoChat() {
   function escolher(chave: string, rotulo: string) {
     if (digitando) return;
     setMsgs((m) => [...m, { de: "user", texto: rotulo, hora: agora() }]);
+    if (chave === "faq") {
+      bot(["Claro! Escolhe uma dúvida frequente aqui embaixo: 👇"], () => setFase("faq"));
+      return;
+    }
     setSetor(chave);
     setFase("nome");
     bot(["Perfeito! Me diz seu *nome*, por favor? 😊"]);
+  }
+
+  function responderFaq(f: (typeof FAQS)[number]) {
+    if (digitando) return;
+    setMsgs((m) => [...m, { de: "user", texto: f.q, hora: agora() }]);
+    bot([f.a, "Mais alguma dúvida? É só escolher 👇"], () => setFase("faq"));
   }
 
   function enviar() {
@@ -92,13 +123,54 @@ export default function RecepcaoChat() {
       if (setor === "boleto") {
         abrirChamado("boleto", v, "2ª via de boleto solicitada", [
           `Prontinho, ${primeiro}! 📄 Localizei seu cadastro e a *2ª via do boleto* chega aqui em instantes.`,
-          "Também avisei a *Roberta, do financeiro* — se precisar de negociação ou comprovante, ela já está com seu nome na tela. Algo mais?",
+          "Também avisei a *Claudete, do financeiro* — se precisar de negociação ou comprovante, ela já está com seu nome na tela. Algo mais?",
         ]);
       } else if (setor === "repasse") {
-        abrirChamado("repasse", v, "Proprietário pediu posição do repasse", [
-          `Tudo certo, ${primeiro}! 💰 Seu repasse está em processamento — a *Roberta, do financeiro,* te envia o extrato em instantes.`,
-          "Proprietário VeraBrokers *não fica sem resposta* 😉 Posso ajudar com mais algo?",
-        ]);
+        const nomeV = v;
+        start(async () => {
+          const r = await consultarCobranca();
+          if (r.ok) {
+            bot(
+              [
+                `Verifiquei aqui, ${primeiro}. 💰 O repasse do imóvel *${r.imovel}* está aguardando a regularização do aluguel do mês.`,
+                `📢 Status da cobrança: *${r.status}*\n💵 Valor em aberto: ${r.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 })}\n⏳ Previsão: ${r.previsao}\n\nAssim que o pagamento entrar, seu repasse sai no mesmo dia — e você é avisado(a) de cada movimento. Acabei de te enviar o status completo por mensagem.`,
+                "Posso ajudar com mais algo?",
+              ],
+              () => setFase("fim")
+            );
+            toast.success("📢 Status da cobrança enviado ao proprietário", {
+              description: "A resposta que hoje ninguém dá — agora sai sozinha, na hora.",
+            });
+            router.refresh();
+          } else {
+            abrirChamado("repasse", nomeV, "Proprietário pediu posição do repasse", [
+              `Tudo certo, ${primeiro}! 💰 Seu repasse está em dia — a *Claudete, do financeiro,* te envia o extrato em instantes.`,
+              "Proprietário VeraBrokers *não fica sem resposta* 😉 Posso ajudar com mais algo?",
+            ]);
+          }
+        });
+      } else if (setor === "sinistro") {
+        start(async () => {
+          const r = await consultarSinistro(v);
+          if (r.ok) {
+            bot(
+              [
+                `Encontrei, ${primeiro}! 🛡 Sinistro do imóvel *${r.imovel}*:\n\n📄 Protocolo: ${r.protocolo} · ${r.seguradora}\n📌 Status: *${r.status}* (aberto há ${r.dias} dia${r.dias === 1 ? "" : "s"})\n⏳ Previsão: até ${r.previsaoDias} dias`,
+                "Acabei de enviar esse status pro WhatsApp do proprietário também — e ele será avisado automaticamente a cada mudança. Posso ajudar com mais algo?",
+              ],
+              () => setFase("fim")
+            );
+            toast.success("🛡 Status consultado e enviado ao proprietário", {
+              description: "Na versão final, a resposta vem direto da API da Loft/Porto Seguro.",
+            });
+            router.refresh();
+          } else {
+            bot(
+              ["Boa notícia: não há nenhum sinistro em andamento por aqui ✅ Precisa acionar o seguro-fiança? A *Aline* cuida disso pra você. Algo mais?"],
+              () => setFase("fim")
+            );
+          }
+        });
       } else if (setor === "chaves") {
         abrirChamado("chaves", v, "Cliente perguntou sobre entrega de chaves", [
           `${primeiro}, suas chaves já estão *programadas*! 🔑 Você recebe aviso automático na *véspera* e no *dia da entrega*, com hora, local e com quem retirar.`,
@@ -118,12 +190,12 @@ export default function RecepcaoChat() {
       const primeiro = nome.split(" ")[0];
       if (setor === "manutencao") {
         abrirChamado("manutencao", nome, v, [
-          `Chamado aberto, ${primeiro}! 🔧 O *Diego, da manutenção,* recebeu sua solicitação agora no WhatsApp dele.`,
-          "Ele te retorna *ainda hoje* com o agendamento. Posso ajudar com mais algo?",
+          `Chamado aberto, ${primeiro}! 🔧 A *Aline, da manutenção,* recebeu sua solicitação agora no WhatsApp dela.`,
+          "Ela te retorna *ainda hoje* com o agendamento. Posso ajudar com mais algo?",
         ]);
       } else {
         abrirChamado("desocupacao", nome, v, [
-          `Anotado, ${primeiro}! A *Marilice, do administrativo,* recebeu seu caso agora e te retorna hoje.`,
+          `Anotado, ${primeiro}! A *Aline, que cuida das desocupações,* recebeu seu caso agora e te retorna hoje.`,
           "Você também vai receber o *passo a passo da desocupação* por aqui, etapa por etapa. Algo mais?",
         ]);
       }
@@ -176,6 +248,28 @@ export default function RecepcaoChat() {
                 {o.rotulo}
               </button>
             ))}
+          </div>
+        )}
+
+        {fase === "faq" && !digitando && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {FAQS.map((f) => (
+              <button
+                key={f.q}
+                className="rounded-full border border-[#00a884]/50 bg-[#00a884]/10 px-2.5 py-1 text-[0.66rem] text-[#7fdec4] hover:bg-[#00a884]/20 transition-colors"
+                onClick={() => responderFaq(f)}
+              >
+                {f.q}
+              </button>
+            ))}
+            <button
+              className="rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[0.66rem] text-[#8696a0] hover:text-[#e9edef] transition-colors"
+              onClick={() => {
+                bot(["O que mais posso fazer por você? 👇"], () => setFase("fim"));
+              }}
+            >
+              ⬅ menu
+            </button>
           </div>
         )}
 

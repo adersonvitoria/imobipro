@@ -369,6 +369,7 @@ export async function dispararEtapa(contratoId: string, etapa: string) {
 
   const mapa: Record<string, { tipos: string[] }> = {
     FICHA_APROVADA: { tipos: ["ETAPA_FICHA"] },
+    ASSINATURA: { tipos: ["ETAPA_ASSINATURA_PROP", "ETAPA_ASSINATURA_INQ"] },
     CONTRATO_ASSINADO: { tipos: ["ETAPA_CONTRATO"] },
     VISTORIA: { tipos: ["ETAPA_VISTORIA"] },
     CHAVES_PRONTAS: { tipos: ["ETAPA_CHAVES_PRONTAS"] },

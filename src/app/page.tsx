@@ -58,7 +58,7 @@ export default async function Hoje() {
       orderBy: { hora: "asc" },
     }),
     db.contrato.count({
-      where: { etapa: { in: ["FICHA_APROVADA", "CONTRATO_ASSINADO", "VISTORIA", "CHAVES_PRONTAS"] } },
+      where: { etapa: { in: ["FICHA_APROVADA", "ASSINATURA", "CONTRATO_ASSINADO", "VISTORIA", "CHAVES_PRONTAS"] } },
     }),
     db.contrato.count({ where: { etapa: "ATIVO" } }),
     db.mensagem.findMany({ where: { criadaEm: { gte: inicio14 } }, select: { criadaEm: true } }),
@@ -303,6 +303,18 @@ export default async function Hoje() {
               </li>
             ))}
           </ol>
+          <div className="mt-5 rounded-xl border border-brand/25 bg-brand-faint px-4 py-3.5">
+            <div className="text-[0.66rem] uppercase tracking-[0.15em] text-brand/80 mb-1">
+              A conta que importa
+            </div>
+            <p className="text-[0.78rem] leading-relaxed text-ink-2">
+              Hoje a ficha é preenchida <span className="text-ink font-medium">3 vezes</span> (sistema,
+              papel e grupo de WhatsApp) e o pós-venda manual come até{" "}
+              <span className="text-ink font-medium">50% do tempo do corretor</span>. Com ficha digital
+              única e disparos automáticos, o corretor estima{" "}
+              <span className="text-brand font-semibold">dobrar a própria locação mensal</span>.
+            </p>
+          </div>
         </section>
       </div>
     </div>

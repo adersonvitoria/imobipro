@@ -8,6 +8,8 @@ export async function seedDemo(db: PrismaClient) {
   const amanha = addDays(hoje, 1);
 
   // limpa tudo (ordem respeita FKs)
+  await db.cobranca.deleteMany();
+  await db.sinistro.deleteMany();
   await db.notaFiscal.deleteMany();
   await db.lancamento.deleteMany();
   await db.mensagem.deleteMany();
@@ -30,14 +32,16 @@ export async function seedDemo(db: PrismaClient) {
   });
 
   // ---- Equipe -------------------------------------------------------------
-  const [gustavo, eduardo, marilice, roberta, diego, daiane] = await Promise.all(
+  const [gustavo, eduardo, paola, marilice, claudete, aline, fabio, daiane] = await Promise.all(
     [
       { nome: "Gustavo Farias", papel: "CORRETOR", whatsapp: "51 98411-2233", cor: "#f473b8" },
       { nome: "Eduardo Ramos", papel: "CORRETOR", whatsapp: "51 98122-7788", cor: "#ed1e8f" },
-      { nome: "Marilice Souza", papel: "ADMINISTRATIVO", whatsapp: "51 99633-4455", cor: "#9ec3d8" },
-      { nome: "Roberta Lima", papel: "FINANCEIRO", whatsapp: "51 98455-1122", cor: "#c9a0c6" },
-      { nome: "Diego Martins", papel: "VISTORIA", whatsapp: "51 99711-9900", cor: "#8fca9f" },
-      { nome: "Daiane Santanna", papel: "GESTAO", whatsapp: "51 99988-0011", cor: "#e0a98f" },
+      { nome: "Paola Siqueira", papel: "CONTRATOS", whatsapp: "51 98301-5566", cor: "#9ec3d8" },
+      { nome: "Marilice Souza", papel: "ADMINISTRATIVO", whatsapp: "51 99633-4455", cor: "#c9a0c6" },
+      { nome: "Claudete Fraga", papel: "FINANCEIRO", whatsapp: "51 98455-1122", cor: "#e8a087" },
+      { nome: "Aline Moraes", papel: "VISTORIA", whatsapp: "51 99711-9900", cor: "#8fca9f" },
+      { nome: "Fábio Antunes", papel: "JURIDICO", whatsapp: "51 99900-7788", cor: "#e0b34f" },
+      { nome: "Daiane Santanna", papel: "GESTAO", whatsapp: "51 99988-0011", cor: "#c39bd3" },
     ].map((m) => db.membro.create({ data: m }))
   );
 
@@ -110,53 +114,81 @@ export async function seedDemo(db: PrismaClient) {
         "💸 {{nome}}, conta no radar de hoje:\n\n{{tipo}}: *{{descricao}}*\n👤 {{contraparte}}\n💰 {{valor}} · vencimento: {{vencimento}}\n\nRegistrado no ImobiPRO. — {{imobiliaria}}",
     },
     {
-      tipo: "ETAPA_FICHA", grupo: "INSTANTANEO", ordem: 9, destino: "INQUILINO",
+      tipo: "ETAPA_FICHA", grupo: "INSTANTANEO", ordem: 20, destino: "INQUILINO",
       nome: "Ficha aprovada",
       descricao: "Dispara na hora em que a ficha é aprovada no sistema.",
       template:
         "Oi {{nome}}, ótima notícia! 🎉 Sua ficha para o imóvel *{{imovel}}* foi *APROVADA*! Seu corretor {{corretor}} e a equipe {{imobiliaria}} já estão preparando seu contrato. Vamos te avisando de cada etapa por aqui — sem precisar ligar.",
     },
     {
-      tipo: "ETAPA_CONTRATO", grupo: "INSTANTANEO", ordem: 8, destino: "INQUILINO",
+      tipo: "ETAPA_ASSINATURA_PROP", grupo: "INSTANTANEO", ordem: 21, destino: "PROPRIETARIO",
+      nome: "Contrato p/ assinatura — proprietário",
+      descricao: "Contrato enviado: o proprietário recebe o aviso na hora, sem o corretor precisar parar visita pra avisar.",
+      template:
+        "📝 {{proprietario}}, o contrato de locação do seu imóvel *{{imovel}}* está pronto e disponível para *assinatura digital*! Você assina primeiro e, na sequência, o inquilino recebe o link automaticamente. Qualquer dúvida, é só responder aqui. — {{imobiliaria}}",
+    },
+    {
+      tipo: "ETAPA_ASSINATURA_INQ", grupo: "INSTANTANEO", ordem: 22, destino: "INQUILINO",
+      nome: "Contrato p/ assinatura — inquilino",
+      descricao: "O inquilino já sabe que o contrato está em assinatura e que o link dele chega sozinho na sequência.",
+      template:
+        "Oi {{nome}}! 📝 Seu contrato do imóvel *{{imovel}}* foi enviado para *assinatura digital*. Assim que o proprietário assinar, o seu link chega automaticamente por aqui — sem precisar ligar pra ninguém. Falta pouco! 🏠",
+    },
+    {
+      tipo: "ETAPA_CONTRATO", grupo: "INSTANTANEO", ordem: 23, destino: "INQUILINO",
       nome: "Contrato assinado",
       descricao: "Confirmação instantânea da assinatura.",
       template:
         "Oi {{nome}}! ✍️ Contrato do imóvel *{{imovel}}* assinado com sucesso. Próxima etapa: vistoria de entrada — te avisamos assim que estiver agendada.",
     },
     {
-      tipo: "ETAPA_VISTORIA", grupo: "INSTANTANEO", ordem: 9, destino: "INQUILINO",
+      tipo: "ETAPA_VISTORIA", grupo: "INSTANTANEO", ordem: 24, destino: "INQUILINO",
       nome: "Vistoria agendada",
       descricao: "Avisa data e hora da vistoria assim que agendada.",
       template:
         "Oi {{nome}}! 📋 A vistoria de entrada do imóvel *{{imovel}}* foi agendada para {{data}} às {{hora}}. Depois dela, suas chaves entram em preparação. Falta pouco! 🏠",
     },
     {
-      tipo: "ETAPA_CHAVES_PRONTAS", grupo: "INSTANTANEO", ordem: 10, destino: "INQUILINO",
+      tipo: "ETAPA_CHAVES_PRONTAS", grupo: "INSTANTANEO", ordem: 25, destino: "INQUILINO",
       nome: "Chaves em preparação",
       descricao: "Chaves prontas: já marca dia, hora e responsável pela entrega.",
       template:
         "Boa notícia, {{nome}}! 🔑 As chaves do imóvel *{{imovel}}* estão prontas! Entrega marcada: *{{data}} às {{hora}}*, com *{{responsavel}}*, na {{loja}}. Você receberá um lembrete na véspera.",
     },
     {
-      tipo: "ETAPA_ATIVO", grupo: "INSTANTANEO", ordem: 11, destino: "INQUILINO",
+      tipo: "ETAPA_ATIVO", grupo: "INSTANTANEO", ordem: 26, destino: "INQUILINO",
       nome: "Boas-vindas ao novo lar",
       descricao: "Chaves entregues: boas-vindas + canais de atendimento no mesmo contato.",
       template:
         "{{nome}}, chaves entregues! 🏠✨ Seja muito bem-vindo(a) ao seu novo lar. Guarde este contato: por aqui você pede *2ª via de boleto*, *manutenção* e fala com o *financeiro* — resposta rápida, sem telefone. — {{imobiliaria}}",
     },
     {
-      tipo: "ETAPA_ATIVO_PROP", grupo: "INSTANTANEO", ordem: 12, destino: "PROPRIETARIO",
+      tipo: "ETAPA_ATIVO_PROP", grupo: "INSTANTANEO", ordem: 27, destino: "PROPRIETARIO",
       nome: "Imóvel ocupado — aviso ao proprietário",
       descricao: "Proprietário sabe na hora que o imóvel foi entregue e quando recebe.",
       template:
         "Olá {{proprietario}}! ✅ Seu imóvel *{{imovel}}* foi entregue hoje ao inquilino {{nome}}. Contrato ativo — seu repasse acontece todo *{{repasse}}*. Você será avisado(a) de cada movimentação por aqui.",
     },
     {
-      tipo: "ETAPA_DESOCUPACAO", grupo: "INSTANTANEO", ordem: 13, destino: "PROPRIETARIO",
+      tipo: "ETAPA_DESOCUPACAO", grupo: "INSTANTANEO", ordem: 28, destino: "PROPRIETARIO",
       nome: "Desocupação iniciada",
       descricao: "Proprietário acompanha cada etapa da desocupação sem precisar cobrar.",
       template:
         "Olá {{proprietario}}. Iniciamos hoje o processo de desocupação do imóvel *{{imovel}}*. Você receberá atualização de *cada etapa*: vistoria de saída, eventuais reparos e reanúncio. Pode ficar tranquilo(a) — a {{imobiliaria}} cuida de tudo. 🤝",
+    },
+    {
+      tipo: "SINISTRO_STATUS", grupo: "INSTANTANEO", ordem: 29, destino: "PROPRIETARIO",
+      nome: "Status de sinistro (seguro-fiança)",
+      descricao: "Proprietário pergunta ou o status muda → resposta na hora com protocolo, status e previsão (API Loft/Porto Seguro).",
+      template:
+        "🛡 {{proprietario}}, atualização do seguro-fiança ({{seguradora}}):\n\n🏠 Imóvel: *{{imovel}}*\n📄 Protocolo: {{protocolo}}\n📌 Status: *{{status}}*\n⏳ Previsão: {{previsao}}\n\nVocê será avisado(a) automaticamente a cada mudança. — {{imobiliaria}}",
+    },
+    {
+      tipo: "COBRANCA_STATUS", grupo: "INSTANTANEO", ordem: 30, destino: "PROPRIETARIO",
+      nome: "Status da cobrança (inadimplência)",
+      descricao: "Aluguel atrasou? O proprietário sabe em que pé está a cobrança — sem ligar, sem cobrar o corretor.",
+      template:
+        "📢 {{proprietario}}, atualização da cobrança do imóvel *{{imovel}}*:\n\n📌 Status: *{{status}}*\n💰 Valor em aberto: {{valor}}\n⏳ Previsão de regularização: {{previsao}}\n\nSeu repasse é processado assim que o pagamento entrar — e você será avisado(a) de cada movimento. — {{imobiliaria}}",
     },
   ];
   for (const r of regras) await db.regra.create({ data: r });
@@ -167,9 +199,9 @@ export async function seedDemo(db: PrismaClient) {
   const cAmanha = [
     { codigo: "VB-1041", inquilino: "Camila Ferreira", imovel: "Apto 302 · Ed. Solar das Acácias", endereco: "Rua Anita Garibaldi, 210", bairro: "Centro", valor: 1650, proprietario: "Sr. Nelson Brum", hora: "09:00", resp: marilice.id, corretor: gustavo.id },
     { codigo: "VB-1038", inquilino: "João Pedro Alves", imovel: "Casa 2 dorm · Vera Cruz", endereco: "Rua das Hortênsias, 87", bairro: "Vera Cruz", valor: 1400, proprietario: "Dona Teresinha Fam", hora: "10:00", resp: marilice.id, corretor: eduardo.id },
-    { codigo: "VB-1044", inquilino: "Larissa Prates", imovel: "Apto 204 · Res. Morada do Sol", endereco: "Av. Centenário, 1543", bairro: "Morada Gaúcha", valor: 1250, proprietario: "Sr. Otávio Ritter", hora: "11:00", resp: diego.id, corretor: gustavo.id },
+    { codigo: "VB-1044", inquilino: "Larissa Prates", imovel: "Apto 204 · Res. Morada do Sol", endereco: "Av. Centenário, 1543", bairro: "Morada Gaúcha", valor: 1250, proprietario: "Sr. Otávio Ritter", hora: "11:00", resp: aline.id, corretor: gustavo.id },
     { codigo: "VB-1046", inquilino: "Vagner Souza", imovel: "Sobrado 3 dorm · Dom Feliciano", endereco: "Rua Caxias do Sul, 402", bairro: "Dom Feliciano", valor: 1980, proprietario: "Sra. Ivone Castilhos", hora: "14:00", resp: marilice.id, corretor: eduardo.id },
-    { codigo: "VB-1047", inquilino: "Patrícia Dias", imovel: "Kitnet 12 · Ed. Único", endereco: "Rua Coelho Neto, 55", bairro: "Centro", valor: 890, proprietario: "Sr. Jorge Baldissera", hora: "16:00", resp: diego.id, corretor: gustavo.id },
+    { codigo: "VB-1047", inquilino: "Patrícia Dias", imovel: "Kitnet 12 · Ed. Único", endereco: "Rua Coelho Neto, 55", bairro: "Centro", valor: 890, proprietario: "Sr. Jorge Baldissera", hora: "16:00", resp: aline.id, corretor: gustavo.id },
   ];
   const contratosAmanha = [];
   for (const c of cAmanha) {
@@ -199,7 +231,7 @@ export async function seedDemo(db: PrismaClient) {
       codigo: "VB-1036", etapa: "CHAVES_PRONTAS", imovel: "Casa 2 dorm · Parque dos Anjos", endereco: "Rua Ijuí, 233", bairro: "Parque dos Anjos",
       valor: 1300, diaVencimento: 10, inquilino: "Débora Nunes", inquilinoZap: zap(13),
       proprietario: "Sr. Vilson Quadros", proprietarioZap: zap(14), corretorId: eduardo.id,
-      entregaData: hoje, entregaHora: "15:00", respEntregaId: diego.id,
+      entregaData: hoje, entregaHora: "15:00", respEntregaId: aline.id,
     },
   });
 
@@ -222,7 +254,7 @@ export async function seedDemo(db: PrismaClient) {
 
   const ficha1 = await db.contrato.create({
     data: {
-      codigo: "VB-1051", etapa: "FICHA_APROVADA", imovel: "Apto 702 · Ed. Golden Tower", endereco: "Rua José Loureiro da Silva, 1590", bairro: "Centro",
+      codigo: "VB-1051", etapa: "ASSINATURA", imovel: "Apto 702 · Ed. Golden Tower", endereco: "Rua José Loureiro da Silva, 1590", bairro: "Centro",
       valor: 2100, diaVencimento: 10, inquilino: "Márcio Steigleder", inquilinoZap: zap(19),
       proprietario: "Dra. Helena Fritsch", proprietarioZap: zap(20), corretorId: gustavo.id,
     },
@@ -263,15 +295,17 @@ export async function seedDemo(db: PrismaClient) {
 
   // ---- Tarefas ------------------------------------------------------------
   const tarefas: { titulo: string; tipo: string; data: string; hora?: string; responsavelId: string; contratoId?: string }[] = [
-    { titulo: "Retorno de desocupação — Sr. Milton (Casa · Bom Sucesso)", tipo: "DESOCUPACAO", data: hoje, hora: "09:30", responsavelId: marilice.id, contratoId: desocupacao.id },
+    { titulo: "Retorno de desocupação — Sr. Milton (Casa · Bom Sucesso)", tipo: "DESOCUPACAO", data: hoje, hora: "09:30", responsavelId: aline.id, contratoId: desocupacao.id },
+    { titulo: "Enviar contrato p/ assinatura — Márcio Steigleder (Apto 702 · Ed. Golden Tower)", tipo: "OUTRO", data: hoje, hora: "09:45", responsavelId: paola.id, contratoId: ficha1.id },
+    { titulo: "Revisão jurídica — contrato VB-1051 (Márcio Steigleder)", tipo: "OUTRO", data: hoje, hora: "11:30", responsavelId: fabio.id, contratoId: ficha1.id },
     { titulo: "Entrega de chaves — Henrique Ott (Apto 501 · Ed. Firenze)", tipo: "ENTREGA_CHAVE", data: hoje, hora: "10:30", responsavelId: marilice.id, contratoId: entregaHoje1.id },
-    { titulo: "Entrega de chaves — Débora Nunes (Casa · Parque dos Anjos)", tipo: "ENTREGA_CHAVE", data: hoje, hora: "15:00", responsavelId: diego.id, contratoId: entregaHoje2.id },
-    { titulo: "Reparo hidráulico — Apto 204 · Dom Feliciano", tipo: "REPARO", data: hoje, hora: "11:00", responsavelId: diego.id },
-    { titulo: "Conferir repasses do dia e enviar comprovantes", tipo: "OUTRO", data: hoje, hora: "09:00", responsavelId: roberta.id },
+    { titulo: "Entrega de chaves — Débora Nunes (Casa · Parque dos Anjos)", tipo: "ENTREGA_CHAVE", data: hoje, hora: "15:00", responsavelId: aline.id, contratoId: entregaHoje2.id },
+    { titulo: "Reparo hidráulico — Apto 204 · Dom Feliciano", tipo: "REPARO", data: hoje, hora: "11:00", responsavelId: aline.id },
+    { titulo: "Conferir repasses do dia e enviar comprovantes", tipo: "OUTRO", data: hoje, hora: "09:00", responsavelId: claudete.id },
     { titulo: "Visita com cliente — Casa 3 dorm · Salgado Filho", tipo: "ATENDIMENTO", data: hoje, hora: "15:30", responsavelId: gustavo.id },
     { titulo: "Fotos do imóvel novo — Sobrado · Dom Feliciano", tipo: "ATENDIMENTO", data: hoje, hora: "10:00", responsavelId: eduardo.id },
     { titulo: "Preparar kits de chaves (5 entregas do dia)", tipo: "OUTRO", data: amanha, hora: "08:30", responsavelId: marilice.id },
-    { titulo: "Vistoria de entrada — Felipe Xavier (Apto 303 · Res. Ipê Amarelo)", tipo: "VISTORIA", data: amanha, hora: "14:00", responsavelId: diego.id, contratoId: vistoriaAmanha.id },
+    { titulo: "Vistoria de entrada — Felipe Xavier (Apto 303 · Res. Ipê Amarelo)", tipo: "VISTORIA", data: amanha, hora: "14:00", responsavelId: aline.id, contratoId: vistoriaAmanha.id },
   ];
   for (const c of contratosAmanha) {
     tarefas.push({
@@ -283,7 +317,7 @@ export async function seedDemo(db: PrismaClient) {
   for (const t of tarefas) await db.tarefa.create({ data: t });
 
   // ---- Eventos de linha do tempo (amostra) --------------------------------
-  await db.evento.create({ data: { contratoId: ficha1.id, titulo: "Ficha aprovada pelo administrativo" } });
+  await db.evento.create({ data: { contratoId: ficha1.id, titulo: "Contrato enviado para assinatura digital (Paola)" } });
   await db.evento.create({ data: { contratoId: contratoAssinado.id, titulo: "Contrato assinado digitalmente" } });
   await db.evento.create({ data: { contratoId: desocupacao.id, titulo: "Aviso de desocupação recebido do inquilino" } });
 
@@ -291,7 +325,7 @@ export async function seedDemo(db: PrismaClient) {
   const NOMES = ["Camila Ferreira", "João Pedro Alves", "Larissa Prates", "Vagner Souza", "Patrícia Dias", "Henrique Ott", "Débora Nunes", "Felipe Xavier", "Tainá Rocha", "Márcio Steigleder", "Ana Beatriz Cunha", "Rodrigo Malta", "Simone Vargas", "Juliana Castro"];
   const PROPS = ["Sr. Nelson Brum", "Dona Iara Peixoto", "Sr. Adão Pereira", "Sra. Marta Winter", "Dr. Paulo Krieger", "Sr. Milton Weber", "Sra. Ivone Castilhos"];
   const IMOVEIS = ["Apto 302 · Ed. Solar das Acácias", "Casa 2 dorm · Vera Cruz", "Apto 204 · Res. Morada do Sol", "Kitnet 12 · Ed. Único", "Apto 405 · Ed. Lucerna", "Casa 2 dorm · Barnabé", "Sala 703 · Centro Empresarial"];
-  const EQUIPE = [gustavo, eduardo, marilice, roberta, diego];
+  const EQUIPE = [gustavo, eduardo, paola, marilice, claudete, aline];
 
   const historico: { tipo: string; nome: string; make: (n: string, im: string, p: string) => { paraNome: string; paraTipo: string; conteudo: string } }[] = [
     { tipo: "BOLETO_D3", nome: "Boleto — 3 dias antes do vencimento", make: (n, im) => ({ paraNome: n, paraTipo: "INQUILINO", conteudo: `Oi ${n.split(" ")[0]}! 💳 Seu aluguel do imóvel *${im}* vence em 3 dias. Quer a 2ª via do boleto? Responda *BOLETO* que enviamos na hora.` }) },
@@ -328,10 +362,10 @@ export async function seedDemo(db: PrismaClient) {
   // Duas mensagens de hoje (o botão "Rodar disparos" preenche o resto ao vivo)
   await db.mensagem.create({
     data: {
-      regraTipo: "ETAPA_FICHA", regraNome: "Ficha aprovada",
-      paraNome: "Márcio Steigleder", paraZap: zap(19), paraTipo: "INQUILINO",
-      conteudo: "Oi Márcio, ótima notícia! 🎉 Sua ficha para o imóvel *Apto 702 · Ed. Golden Tower* foi *APROVADA*! Seu corretor Gustavo Farias e a equipe VeraBrokers já estão preparando seu contrato. Vamos te avisando de cada etapa por aqui — sem precisar ligar.",
-      status: "SIMULADA", origem: "ETAPA", dedupeKey: `ETAPA_FICHA:${ficha1.id}`,
+      regraTipo: "ETAPA_ASSINATURA_PROP", regraNome: "Contrato p/ assinatura — proprietário",
+      paraNome: "Dra. Helena Fritsch", paraZap: zap(20), paraTipo: "PROPRIETARIO",
+      conteudo: "📝 Helena, o contrato de locação do seu imóvel *Apto 702 · Ed. Golden Tower* está pronto e disponível para *assinatura digital*! Você assina primeiro e, na sequência, o inquilino recebe o link automaticamente. Qualquer dúvida, é só responder aqui. — VeraBrokers",
+      status: "SIMULADA", origem: "ETAPA", dedupeKey: `ETAPA_ASSINATURA_PROP:${ficha1.id}`,
       contratoId: ficha1.id, criadaEm: spInstant(hoje, "09:12"),
     },
   });
@@ -394,6 +428,44 @@ export async function seedDemo(db: PrismaClient) {
       competencia, tomador: "Sr. Ermindo Weiss",
       descricao: "Taxa de intermediação — Loja 02 · Av. Dorival",
       valor: 2600, status: "PENDENTE",
+    },
+  });
+
+  // ---- Sinistros de seguro-fiança (Loft / Porto Seguro) ---------------------
+  await db.sinistro.create({
+    data: {
+      seguradora: "LOFT", tipo: "INADIMPLENCIA", status: "EM_ANALISE",
+      protocolo: "LFT-48291", previsaoDias: 90,
+      imovel: "Casa 2 dorm · Bom Sucesso", proprietario: "Sr. Milton Weber",
+      proprietarioZap: zap(51), contratoId: desocupacao.id,
+      abertoEm: spInstant(addDays(hoje, -6), "10:20"),
+    },
+  });
+  await db.sinistro.create({
+    data: {
+      seguradora: "PORTO", tipo: "DANOS", status: "PAGO",
+      protocolo: "PS-77104", previsaoDias: 60,
+      imovel: "Apto 108 · Res. Viena", proprietario: "Sra. Marta Winter",
+      proprietarioZap: zap(42),
+      abertoEm: spInstant(addDays(hoje, -40), "14:05"),
+    },
+  });
+
+  // ---- Cobranças de inadimplência -------------------------------------------
+  await db.cobranca.create({
+    data: {
+      inquilino: "Diego Fontoura", imovel: "Casa 2 dorm · Bom Sucesso",
+      proprietario: "Sr. Milton Weber", proprietarioZap: zap(51),
+      valor: 1350, status: "NEGOCIACAO", previsaoPagamento: addDays(hoje, 12),
+      iniciadaEm: spInstant(addDays(hoje, -4), "09:40"), contratoId: desocupacao.id,
+    },
+  });
+  await db.cobranca.create({
+    data: {
+      inquilino: "Juliana Castro", imovel: "Sala 703 · Centro Empresarial",
+      proprietario: "Dr. Paulo Krieger", proprietarioZap: zap(43),
+      valor: 2250, status: "REGULARIZADO",
+      iniciadaEm: spInstant(addDays(hoje, -15), "11:00"),
     },
   });
 
