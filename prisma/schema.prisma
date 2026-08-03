@@ -61,6 +61,26 @@ model Contrato {
   notas           NotaFiscal[]
   sinistros       Sinistro[]
   cobrancas       Cobranca[]
+  documentos      Documento[]
+}
+
+// Pasta digital — documentos de inquilinos e proprietários
+model Documento {
+  id         String    @id @default(cuid())
+  pessoa     String
+  pessoaZap  String
+  tipoPessoa String // INQUILINO | PROPRIETARIO
+  tipo       String // RG_CNH | CPF | COMP_RENDA | COMP_RESIDENCIA | CERTIDAO | PROCURACAO | APOLICE_SEGURO | CONTRATO_ASSINADO
+  rotulo     String
+  status     String    @default("PENDENTE") // PENDENTE | RECEBIDO | APROVADO
+  arquivo    String?
+  recebidoEm DateTime?
+  contratoId String?
+  contrato   Contrato? @relation(fields: [contratoId], references: [id])
+  criadoEm   DateTime  @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@index([status])
 }
 
 // Esteira de cobrança de inadimplência

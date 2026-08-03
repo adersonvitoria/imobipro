@@ -8,6 +8,7 @@ export async function seedDemo(db: PrismaClient) {
   const amanha = addDays(hoje, 1);
 
   // limpa tudo (ordem respeita FKs)
+  await db.documento.deleteMany();
   await db.cobranca.deleteMany();
   await db.sinistro.deleteMany();
   await db.notaFiscal.deleteMany();
@@ -62,7 +63,7 @@ export async function seedDemo(db: PrismaClient) {
       nome: "Boletim da operação para a gestão",
       descricao: "A gestão recebe o pulso completo da operação no WhatsApp — sem precisar centralizar nada.",
       template:
-        "📊 *Boletim {{imobiliaria}} — {{data}}*\n\nBom dia, {{nome}}! Sua operação em 30 segundos:\n\n{{resumo}}\n\n_Gerado automaticamente pelo ImobiPRO. Pergunte \"como está a operação\" no Analista para detalhes._",
+        "📊 *Boletim {{imobiliaria}} — {{data}}*\n\nBom dia, {{nome}}! Sua operação em 30 segundos:\n\n{{resumo}}\n\n_Gerado automaticamente pela sua central. Pergunte \"como está a operação\" no Analista para detalhes._",
     },
     {
       tipo: "ENTREGA_VESPERA", grupo: "DIARIO", ordem: 2, hora: "08:00", destino: "INQUILINO",
@@ -104,14 +105,21 @@ export async function seedDemo(db: PrismaClient) {
       nome: "Alerta por demanda do dia",
       descricao: "Cada demanda pendente do dia vira um alerta individual no WhatsApp do responsável — nada passa batido.",
       template:
-        "⏰ Alerta de demanda, {{nome}}!\n\n📌 *{{demanda}}*\n🗓 Hoje · {{hora}}\n\nQuando concluir, marque ✅ na sua agenda do ImobiPRO. — {{imobiliaria}}",
+        "⏰ Alerta de demanda, {{nome}}!\n\n📌 *{{demanda}}*\n🗓 Hoje · {{hora}}\n\nQuando concluir, marque ✅ na sua agenda. — {{imobiliaria}}",
     },
     {
       tipo: "ALERTA_CONTA", grupo: "DIARIO", ordem: 8, hora: "08:15", destino: "EQUIPE",
       nome: "Alerta de contas do dia",
       descricao: "Contas a pagar vencendo hoje e recebimentos em atraso chegam um a um no WhatsApp do financeiro.",
       template:
-        "💸 {{nome}}, conta no radar de hoje:\n\n{{tipo}}: *{{descricao}}*\n👤 {{contraparte}}\n💰 {{valor}} · vencimento: {{vencimento}}\n\nRegistrado no ImobiPRO. — {{imobiliaria}}",
+        "💸 {{nome}}, conta no radar de hoje:\n\n{{tipo}}: *{{descricao}}*\n👤 {{contraparte}}\n💰 {{valor}} · vencimento: {{vencimento}}\n\nRegistrado na central. — {{imobiliaria}}",
+    },
+    {
+      tipo: "DOC_PENDENTE", grupo: "DIARIO", ordem: 9, hora: "08:20", destino: "INQUILINO",
+      nome: "Cobrança de documentos pendentes",
+      descricao: "Quem está com documento faltando recebe a lista todo dia — sem a Paola precisar caçar ninguém no grupo.",
+      template:
+        "📎 Oi {{nome}}! Para avançar com o contrato do imóvel *{{imovel}}*, ainda faltam estes documentos:\n\n{{lista}}\n\nPode mandar *foto aqui mesmo* que eu já anexo na sua pasta digital — leva 1 minuto. 😉 — {{imobiliaria}}",
     },
     {
       tipo: "ETAPA_FICHA", grupo: "INSTANTANEO", ordem: 20, destino: "INQUILINO",
@@ -182,6 +190,13 @@ export async function seedDemo(db: PrismaClient) {
       descricao: "Proprietário pergunta ou o status muda → resposta na hora com protocolo, status e previsão (API Loft/Porto Seguro).",
       template:
         "🛡 {{proprietario}}, atualização do seguro-fiança ({{seguradora}}):\n\n🏠 Imóvel: *{{imovel}}*\n📄 Protocolo: {{protocolo}}\n📌 Status: *{{status}}*\n⏳ Previsão: {{previsao}}\n\nVocê será avisado(a) automaticamente a cada mudança. — {{imobiliaria}}",
+    },
+    {
+      tipo: "DOC_CONFIRMACAO", grupo: "INSTANTANEO", ordem: 31, destino: "INQUILINO",
+      nome: "Documento recebido — confirmação",
+      descricao: "Documento chegou → confirmação na hora, com a lista do que ainda falta (ou parabéns pela pasta completa).",
+      template:
+        "✅ Recebi seu *{{documento}}*, {{nome}}! Já está guardado na sua pasta digital.{{faltantes}} — {{imobiliaria}}",
     },
     {
       tipo: "COBRANCA_STATUS", grupo: "INSTANTANEO", ordem: 30, destino: "PROPRIETARIO",
@@ -259,7 +274,7 @@ export async function seedDemo(db: PrismaClient) {
       proprietario: "Dra. Helena Fritsch", proprietarioZap: zap(20), corretorId: gustavo.id,
     },
   });
-  await db.contrato.create({
+  const ficha2 = await db.contrato.create({
     data: {
       codigo: "VB-1052", etapa: "FICHA_APROVADA", imovel: "Casa 3 dorm · Salgado Filho", endereco: "Rua Tupinambá, 412", bairro: "Salgado Filho",
       valor: 1850, diaVencimento: 15, inquilino: "Ana Beatriz Cunha", inquilinoZap: zap(21),
@@ -450,6 +465,40 @@ export async function seedDemo(db: PrismaClient) {
       abertoEm: spInstant(addDays(hoje, -40), "14:05"),
     },
   });
+
+  // ---- Pasta digital — documentos --------------------------------------------
+  const ontem = addDays(hoje, -1);
+  const docs: {
+    contratoId: string; pessoa: string; pessoaZap: string; tipoPessoa: string;
+    tipo: string; rotulo: string; status: string; arquivo?: string;
+  }[] = [
+    // Ana Beatriz (VB-1052 · ficha aprovada) — pendências travando o contrato
+    { contratoId: ficha2.id, pessoa: "Ana Beatriz Cunha", pessoaZap: zap(21), tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-ana.pdf" },
+    { contratoId: ficha2.id, pessoa: "Ana Beatriz Cunha", pessoaZap: zap(21), tipoPessoa: "INQUILINO", tipo: "CPF", rotulo: "CPF", status: "APROVADO", arquivo: "cpf-ana.pdf" },
+    { contratoId: ficha2.id, pessoa: "Ana Beatriz Cunha", pessoaZap: zap(21), tipoPessoa: "INQUILINO", tipo: "COMP_RESIDENCIA", rotulo: "Comprovante de residência", status: "RECEBIDO", arquivo: "residencia-ana.jpg" },
+    { contratoId: ficha2.id, pessoa: "Ana Beatriz Cunha", pessoaZap: zap(21), tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "PENDENTE" },
+    { contratoId: ficha2.id, pessoa: "Sr. Arno Petry", pessoaZap: zap(22), tipoPessoa: "PROPRIETARIO", tipo: "PROCURACAO", rotulo: "Procuração do imóvel", status: "PENDENTE" },
+    // Márcio (VB-1051 · assinatura) — pasta completa
+    { contratoId: ficha1.id, pessoa: "Márcio Steigleder", pessoaZap: zap(19), tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-marcio.pdf" },
+    { contratoId: ficha1.id, pessoa: "Márcio Steigleder", pessoaZap: zap(19), tipoPessoa: "INQUILINO", tipo: "CPF", rotulo: "CPF", status: "APROVADO", arquivo: "cpf-marcio.pdf" },
+    { contratoId: ficha1.id, pessoa: "Márcio Steigleder", pessoaZap: zap(19), tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "APROVADO", arquivo: "renda-marcio.pdf" },
+    // Tainá (VB-1050 · contrato assinado) — falta anexar o contrato assinado
+    { contratoId: contratoAssinado.id, pessoa: "Tainá Rocha", pessoaZap: zap(17), tipoPessoa: "INQUILINO", tipo: "APOLICE_SEGURO", rotulo: "Apólice do seguro-fiança", status: "RECEBIDO", arquivo: "apolice-taina.pdf" },
+    { contratoId: contratoAssinado.id, pessoa: "Tainá Rocha", pessoaZap: zap(17), tipoPessoa: "INQUILINO", tipo: "CONTRATO_ASSINADO", rotulo: "Contrato assinado (via digital)", status: "PENDENTE" },
+    // Camila (VB-1041 · entrega amanhã) — pasta completa
+    { contratoId: contratosAmanha[0].id, pessoa: "Camila Ferreira", pessoaZap: contratosAmanha[0].inquilinoZap, tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-camila.pdf" },
+    { contratoId: contratosAmanha[0].id, pessoa: "Camila Ferreira", pessoaZap: contratosAmanha[0].inquilinoZap, tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "APROVADO", arquivo: "renda-camila.pdf" },
+    { contratoId: contratosAmanha[0].id, pessoa: "Camila Ferreira", pessoaZap: contratosAmanha[0].inquilinoZap, tipoPessoa: "INQUILINO", tipo: "APOLICE_SEGURO", rotulo: "Apólice do seguro-fiança", status: "APROVADO", arquivo: "apolice-camila.pdf" },
+  ];
+  for (const [i, d] of docs.entries()) {
+    await db.documento.create({
+      data: {
+        contratoId: d.contratoId, pessoa: d.pessoa, pessoaZap: d.pessoaZap, tipoPessoa: d.tipoPessoa,
+        tipo: d.tipo, rotulo: d.rotulo, status: d.status, arquivo: d.arquivo ?? null,
+        recebidoEm: d.status === "PENDENTE" ? null : spInstant(ontem, `1${i % 8}:2${i % 6}`),
+      },
+    });
+  }
 
   // ---- Cobranças de inadimplência -------------------------------------------
   await db.cobranca.create({

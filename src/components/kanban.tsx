@@ -34,6 +34,7 @@ export type CartaoContrato = {
   vistoriaHora: string | null;
   corretor: { nome: string; cor: string } | null;
   respEntrega: { nome: string } | null;
+  docsPendentes: number;
 };
 
 type MembroOpcao = { id: string; nome: string };
@@ -191,6 +192,16 @@ export default function Kanban({
                         <div className="mt-0.5 text-[0.72rem] text-ink-3 leading-snug">
                           {c.imovel} · {c.bairro}
                         </div>
+
+                        {c.docsPendentes > 0 && (
+                          <a
+                            href="/documentos"
+                            className="mt-2 inline-flex items-center gap-1 rounded-md border border-warn/35 bg-warn/10 px-1.5 py-0.5 text-[0.62rem] text-warn hover:brightness-110"
+                          >
+                            📎 {c.docsPendentes} doc{c.docsPendentes > 1 ? "s" : ""} pendente
+                            {c.docsPendentes > 1 ? "s" : ""}
+                          </a>
+                        )}
 
                         {c.etapa === "CHAVES_PRONTAS" && c.entregaData && (
                           <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-brand/25 bg-brand-faint px-2.5 py-1.5 text-[0.7rem] text-brand">

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Bot,
   FileSignature,
+  FolderOpen,
   KeyRound,
   MessagesSquare,
   Sparkles,
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/analista", label: "Analista", icon: Sparkles },
   { href: "/recepcao", label: "Recepção", icon: Bot },
   { href: "/contratos", label: "Contratos", icon: FileSignature },
+  { href: "/documentos", label: "Docs", icon: FolderOpen },
   { href: "/mensagens", label: "Mensagens", icon: MessagesSquare },
   { href: "/equipe", label: "Equipe", icon: Users },
   { href: "/regras", label: "Régua", icon: Zap },
@@ -38,11 +40,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <KeyRound size={17} strokeWidth={2.2} />
               </span>
               <div>
-                <div className="font-display text-[1.35rem] leading-none tracking-tight">
-                  Imobi<span className="text-brand">PRO</span>
+                <div className="font-display text-[1.3rem] leading-none tracking-tight">
+                  <span className="text-ink">Vera</span>
+                  <span className="text-brand">Brokers</span>
                 </div>
-                <div className="mt-1 text-[0.62rem] uppercase tracking-[0.18em] text-ink-3">
-                  VeraBrokers · Gravataí
+                <div className="mt-1 text-[0.56rem] uppercase tracking-[0.16em] text-ink-3">
+                  Locação &amp; venda de imóveis
                 </div>
               </div>
             </div>
@@ -99,7 +102,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Nav mobile */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[var(--hairline)] bg-[var(--shell-2)] backdrop-blur-xl">
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-8">
           {NAV.map(({ href, label, icon: Icon }) => {
             const ativo = pathname === href;
             return (

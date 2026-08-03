@@ -27,6 +27,10 @@ const FAQS = [
     q: "Qual o prazo do caução?",
     a: "Após a vistoria de saída aprovada, a devolução do caução acontece em até *30 dias*, com correção. Você acompanha cada etapa por aqui. 🤝",
   },
+  {
+    q: "Como envio meus documentos?",
+    a: "Manda a *foto aqui mesmo* que eu anexo na sua pasta digital na hora ✅ RG, CPF, comprovantes — tudo fica guardado no seu contrato, com confirmação automática e sem grupo de WhatsApp. 📎",
+  },
 ];
 
 const OPCOES = [

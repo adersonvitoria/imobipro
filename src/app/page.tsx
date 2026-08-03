@@ -104,7 +104,7 @@ export default async function Hoje() {
       </TituloPagina>
 
       <p className="-mt-4 mb-7 max-w-2xl text-[0.9rem] text-ink-2 animate-fade-up">
-        O ImobiPRO já sabe o que precisa acontecer hoje — entregas de chave, boletos,
+        A sua central já sabe o que precisa acontecer hoje — entregas de chave, boletos,
         repasses e a agenda de cada um — <span className="text-ink">e avisa todo mundo sozinho</span>.
       </p>
 

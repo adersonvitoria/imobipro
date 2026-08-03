@@ -225,11 +225,101 @@ export async function criarChamado(setor: string, nomeCliente: string, resumo: s
     paraTipo: "EQUIPE",
     origem: "RECEPCAO",
     membroId: membro.id,
-    conteudo: `📥 Novo chamado direcionado para você:\n\n*${alvo.rotulo}* — ${resumo}\nCliente: ${nomeCliente}\n\nAberto pela recepção automática ImobiPRO.`,
+    conteudo: `📥 Novo chamado direcionado para você:\n\n*${alvo.rotulo}* — ${resumo}\nCliente: ${nomeCliente}\n\nAberto pela recepção automática VeraBrokers.`,
   });
 
   revalidarTudo();
   return { ok: true, responsavel: membro.nome };
+}
+
+/** Pasta digital: marca documento como recebido/aprovado e confirma no WhatsApp */
+export async function marcarDocumento(id: string, status: "PENDENTE" | "RECEBIDO" | "APROVADO") {
+  const { primeiroNome } = await import("@/lib/dates");
+  const { render } = await import("@/lib/templates");
+
+  const doc = await db.documento.findUniqueOrThrow({ where: { id } });
+  const arquivo =
+    status === "PENDENTE"
+      ? null
+      : doc.arquivo ?? `${doc.tipo.toLowerCase().replace(/_/g, "-")}-${primeiroNome(doc.pessoa).toLowerCase()}.jpg`;
+
+  await db.documento.update({
+    where: { id },
+    data: { status, arquivo, recebidoEm: status === "PENDENTE" ? null : doc.recebidoEm ?? new Date() },
+  });
+
+  let confirmada = false;
+  if (status === "RECEBIDO") {
+    const regra = await db.regra.findUnique({ where: { tipo: "DOC_CONFIRMACAO" } });
+    if (regra?.ativo) {
+      const cfg = await db.config.findFirstOrThrow();
+      const aindaFaltam = await db.documento.findMany({
+        where: { pessoa: doc.pessoa, status: "PENDENTE", id: { not: id } },
+      });
+      const faltantes =
+        aindaFaltam.length > 0
+          ? `\n\nAinda falta(m): *${aindaFaltam.map((f) => f.rotulo).join(", ")}* — pode mandar na sequência!`
+          : ` Sua documentação está *completa* — seguimos para a próxima etapa! 🎉`;
+      confirmada = await despachar({
+        regraTipo: regra.tipo,
+        regraNome: regra.nome,
+        paraNome: doc.pessoa,
+        paraZap: doc.pessoaZap,
+        paraTipo: doc.tipoPessoa === "PROPRIETARIO" ? "PROPRIETARIO" : "INQUILINO",
+        origem: "MANUAL",
+        contratoId: doc.contratoId ?? undefined,
+        dedupeKey: `DOC_CONF:${id}`,
+        conteudo: render(regra.template, {
+          nome: primeiroNome(doc.pessoa),
+          documento: doc.rotulo,
+          faltantes,
+          imobiliaria: cfg.imobiliaria,
+        }),
+      });
+    }
+  }
+
+  revalidarTudo();
+  return { ok: true, confirmada };
+}
+
+/** Pasta digital: dispara agora a cobrança dos documentos pendentes de uma pessoa */
+export async function cobrarDocumentos(pessoa: string) {
+  const { spToday, primeiroNome } = await import("@/lib/dates");
+  const { render } = await import("@/lib/templates");
+
+  const lista = await db.documento.findMany({
+    where: { pessoa, status: "PENDENTE" },
+    include: { contrato: true },
+  });
+  if (lista.length === 0) return { ok: false, criadas: 0 };
+
+  const regra = await db.regra.findUnique({ where: { tipo: "DOC_PENDENTE" } });
+  if (!regra?.ativo) return { ok: false, criadas: 0 };
+
+  const cfg = await db.config.findFirstOrThrow();
+  const chave = pessoa.toLowerCase().replace(/\s+/g, "-");
+  const criou = await despachar({
+    regraTipo: regra.tipo,
+    regraNome: regra.nome,
+    paraNome: pessoa,
+    paraZap: lista[0].pessoaZap,
+    paraTipo: lista[0].tipoPessoa === "PROPRIETARIO" ? "PROPRIETARIO" : "INQUILINO",
+    origem: "MANUAL",
+    contratoId: lista[0].contratoId ?? undefined,
+    dedupeKey: `DOC_MANUAL:${chave}:${spToday()}`,
+    conteudo: render(regra.template, {
+      imobiliaria: cfg.imobiliaria,
+      loja: cfg.lojaEndereco,
+      horario_loja: cfg.lojaHorario,
+      nome: primeiroNome(pessoa),
+      imovel: lista[0].contrato?.imovel ?? "seu contrato",
+      lista: lista.map((d) => `  • ${d.rotulo}`).join("\n"),
+    }),
+  });
+
+  revalidarTudo();
+  return { ok: true, criadas: criou ? 1 : 0 };
 }
 
 const SINISTRO_ROTULO: Record<string, string> = {

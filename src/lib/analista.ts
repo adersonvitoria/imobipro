@@ -66,6 +66,10 @@ export type Snapshot = {
     }[];
     concluidos: number;
   };
+  documentos: {
+    pendentes: number;
+    porPessoa: { pessoa: string; tipoPessoa: string; imovel: string; docs: string[] }[];
+  };
   cobrancas: {
     abertas: {
       inquilino: string;
@@ -115,6 +119,7 @@ export async function coletarSnapshot(): Promise<Snapshot> {
     notasAll,
     sinistrosAll,
     cobrancasAll,
+    docsPendentesAll,
   ] = await Promise.all([
       db.contrato.findMany({ include: { respEntrega: true } }),
       db.tarefa.findMany({ where: { data: hoje }, include: { responsavel: true }, orderBy: { hora: "asc" } }),
@@ -131,6 +136,10 @@ export async function coletarSnapshot(): Promise<Snapshot> {
       db.notaFiscal.findMany(),
       db.sinistro.findMany({ orderBy: { abertoEm: "desc" } }),
       db.cobranca.findMany({ orderBy: { iniciadaEm: "desc" } }),
+      db.documento.findMany({
+        where: { status: "PENDENTE" },
+        include: { contrato: { select: { imovel: true } } },
+      }),
     ]);
 
   const ativos = contratos.filter((c) => c.etapa === "ATIVO");
@@ -248,6 +257,18 @@ export async function coletarSnapshot(): Promise<Snapshot> {
     DEFERIDO: "deferido — pagamento programado",
     PAGO: "pago",
   };
+  const docsPorPessoa = new Map<string, { pessoa: string; tipoPessoa: string; imovel: string; docs: string[] }>();
+  for (const d of docsPendentesAll) {
+    const atual = docsPorPessoa.get(d.pessoa) ?? {
+      pessoa: d.pessoa,
+      tipoPessoa: d.tipoPessoa,
+      imovel: d.contrato?.imovel ?? "—",
+      docs: [],
+    };
+    atual.docs.push(d.rotulo);
+    docsPorPessoa.set(d.pessoa, atual);
+  }
+
   const ROT_COBRANCA: Record<string, string> = {
     COBRANCA_INICIADA: "cobrança iniciada",
     AVISO_FORMAL: "aviso formal enviado",
@@ -336,6 +357,10 @@ export async function coletarSnapshot(): Promise<Snapshot> {
     cobrancas: {
       abertas: cobAbertas,
       regularizadas: cobrancasAll.length - cobAbertas.length,
+    },
+    documentos: {
+      pendentes: docsPendentesAll.length,
+      porPessoa: Array.from(docsPorPessoa.values()),
     },
     financeiro: {
       receberAberto: soma(receber),
@@ -427,6 +452,15 @@ export function respostaResumo(s: Snapshot): string {
     const cob = s.cobrancas.abertas[0];
     partes.push(
       `\n📢 *Cobranças:* ${s.cobrancas.abertas.length} em andamento (${primeiroNome(cob.inquilino)} · *${cob.status}* · previsão ${cob.previsao}) — ${cob.proprietario} recebe cada movimento.`
+    );
+  }
+
+  if (s.documentos.pendentes > 0) {
+    partes.push(
+      `\n📎 *Documentos:* ${s.documentos.pendentes} pendente(s) (${s.documentos.porPessoa
+        .slice(0, 3)
+        .map((p) => `${primeiroNome(p.pessoa)}: ${p.docs[0]}${p.docs.length > 1 ? ` +${p.docs.length - 1}` : ""}`)
+        .join(" · ")}) — cobrança automática às 08:20.`
     );
   }
 
@@ -597,6 +631,25 @@ export function respostaNotas(s: Snapshot): string {
   return partes.join("") + rodape(s);
 }
 
+export function respostaDocumentos(s: Snapshot): string {
+  const partes: string[] = [`📎 *Pasta digital — documentos*`];
+  if (s.documentos.pendentes > 0) {
+    partes.push(`\n*Pendentes (${s.documentos.pendentes}):*`);
+    for (const p of s.documentos.porPessoa) {
+      partes.push(
+        `\n  • *${p.pessoa}* (${p.tipoPessoa === "PROPRIETARIO" ? "proprietário" : "inquilino"} · ${p.imovel}):\n    ${p.docs.join(" · ")}`
+      );
+    }
+    partes.push(
+      `\n\nCada um deles recebe a cobrança automática às *08:20* com a lista do que falta — e confirmação na hora quando envia.`
+    );
+  } else {
+    partes.push(`\n\n✅ Nenhum documento pendente — todas as pastas completas.`);
+  }
+  partes.push(`\nNada de caçar RG em grupo de WhatsApp: tudo fica no contrato, com status e histórico.`);
+  return partes.join("") + rodape(s);
+}
+
 export function respostaCobrancas(s: Snapshot): string {
   const partes: string[] = [`📢 *Cobranças de inadimplência*`];
   if (s.cobrancas.abertas.length > 0) {
@@ -731,6 +784,12 @@ export function respostaRiscos(s: Snapshot): string {
         .map((x) => `${primeiroNome(x.inquilino)}: ${x.status}`)
         .join(" · ")}).`
     );
+  if (s.documentos.pendentes > 0)
+    alertas.push(
+      `🟡 ${s.documentos.pendentes} documento(s) pendente(s) segurando contratos (${s.documentos.porPessoa
+        .map((p) => primeiroNome(p.pessoa))
+        .join(", ")}) — cobrança automática ativa.`
+    );
 
   const partes = [`🚨 *Riscos e pendências agora*`];
   partes.push(alertas.length > 0 ? `\n${alertas.map((a) => `\n${a}`).join("")}` : `\n\n✅ Nenhum alerta crítico. Operação redonda.`);
@@ -747,6 +806,7 @@ function respostaAjuda(s: Snapshot): string {
     `\n  • *"Notas fiscais"* — NFS-e emitidas e pendentes` +
     `\n  • *"Sinistros"* — seguro-fiança: status, protocolo e previsão` +
     `\n  • *"Cobranças"* — inadimplência: esteira, status e previsão` +
+    `\n  • *"Documentos"* — pasta digital: o que falta de quem` +
     `\n  • *"Carga da equipe"* — quem está com o quê` +
     `\n  • *"Disparos de hoje"* — comunicação automática` +
     `\n  • *"Riscos e pendências"* — o que merece atenção` +
@@ -766,6 +826,7 @@ export function responder(pergunta: string, s: Snapshot): string {
   const tem = (...ks: string[]) => ks.some((k) => p.includes(k));
 
   if (tem("nota", "nfs", "fiscal", "imposto", "emissao", "emitir")) return respostaNotas(s);
+  if (tem("documento", "docs", "pasta", "comprovante", "procuracao", "apolice")) return respostaDocumentos(s);
   if (tem("cobranc", "inadimpl", "juridic", "calote", "devedor", "nao pagou")) return respostaCobrancas(s);
   if (tem("sinistro", "seguradora", "seguro", "loft", "porto", "fianca")) return respostaSinistros(s);
   if (tem("entrega", "chave", "retirada", "vistoria")) return respostaEntregas(s);
@@ -806,6 +867,9 @@ export function resumoBoletim(s: Snapshot): string {
         .map((x) => `${primeiroNome(x.inquilino)} · ${x.status}`)
         .join(" · ")})`
     );
+  }
+  if (s.documentos.pendentes > 0) {
+    linhas.push(`📎 Documentos pendentes: ${s.documentos.pendentes} (cobrança automática 08:20)`);
   }
   linhas.push(`💳 Boletos vencendo em 5 dias: ${s.boletos.length}`);
   linhas.push(`💰 Carteira ativa: ${brl(s.carteira.valorMes)}/mês (${s.carteira.ativos} contratos)`);

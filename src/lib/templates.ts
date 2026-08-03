@@ -19,6 +19,8 @@ export const PLACEHOLDERS: Record<string, string[]> = {
   ETAPA_ASSINATURA_INQ: ["nome", "imovel"],
   SINISTRO_STATUS: ["proprietario", "imovel", "seguradora", "protocolo", "status", "previsao", "imobiliaria"],
   COBRANCA_STATUS: ["proprietario", "imovel", "status", "valor", "previsao", "imobiliaria"],
+  DOC_PENDENTE: ["nome", "imovel", "lista", "imobiliaria"],
+  DOC_CONFIRMACAO: ["nome", "documento", "faltantes", "imobiliaria"],
   ETAPA_CONTRATO: ["nome", "imovel"],
   ETAPA_VISTORIA: ["nome", "imovel", "data", "hora"],
   ETAPA_CHAVES_PRONTAS: ["nome", "imovel", "data", "hora", "responsavel", "loja"],

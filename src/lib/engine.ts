@@ -313,7 +313,41 @@ export async function rodarDisparosDiarios(origem: "CRON" | "MANUAL") {
     }
   }
 
-  // 9) Boletim da operação para a gestão
+  // 9) Cobrança de documentos pendentes (1 mensagem por pessoa, com a lista)
+  const rDoc = regras.get("DOC_PENDENTE");
+  if (rDoc?.ativo) {
+    const pendentesDoc = await db.documento.findMany({
+      where: { status: "PENDENTE" },
+      include: { contrato: true },
+    });
+    const porPessoa = new Map<string, typeof pendentesDoc>();
+    for (const d of pendentesDoc) {
+      const lista = porPessoa.get(d.pessoa) ?? [];
+      lista.push(d);
+      porPessoa.set(d.pessoa, lista);
+    }
+    for (const [pessoa, lista] of porPessoa) {
+      const chave = pessoa.toLowerCase().replace(/\s+/g, "-");
+      await tenta({
+        regraTipo: rDoc.tipo,
+        regraNome: rDoc.nome,
+        paraNome: pessoa,
+        paraZap: lista[0].pessoaZap,
+        paraTipo: lista[0].tipoPessoa === "PROPRIETARIO" ? "PROPRIETARIO" : "INQUILINO",
+        origem,
+        contratoId: lista[0].contratoId ?? undefined,
+        dedupeKey: `DOC_PENDENTE:${chave}:${hoje}`,
+        conteudo: render(rDoc.template, {
+          ...base,
+          nome: primeiroNome(pessoa),
+          imovel: lista[0].contrato?.imovel ?? "seu contrato",
+          lista: lista.map((d) => `  • ${d.rotulo}`).join("\n"),
+        }),
+      });
+    }
+  }
+
+  // 10) Boletim da operação para a gestão
   const rBoletim = regras.get("BOLETIM_GESTAO");
   if (rBoletim?.ativo) {
     const { coletarSnapshot, resumoBoletim } = await import("./analista");

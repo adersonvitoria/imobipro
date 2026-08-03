@@ -13,9 +13,9 @@ const sans = Archivo({ subsets: ["latin"], variable: "--font-sans" });
 const mono = Spline_Sans_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: "ImobiPRO · VeraBrokers — Locação no piloto automático",
+  title: "VeraBrokers — Central Inteligente de Locação",
   description:
-    "Central de automação de locação: entregas de chave, boletos, repasses e agenda da equipe disparados sozinhos, todos os dias.",
+    "Locação no piloto automático: entregas de chave, boletos, repasses, cobranças, documentos e a agenda da equipe — tudo disparado sozinho, todos os dias.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

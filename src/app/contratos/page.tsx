@@ -7,7 +7,11 @@ export const dynamic = "force-dynamic";
 export default async function Contratos() {
   const [contratos, corretores] = await Promise.all([
     db.contrato.findMany({
-      include: { corretor: true, respEntrega: true },
+      include: {
+        corretor: true,
+        respEntrega: true,
+        documentos: { where: { status: "PENDENTE" }, select: { id: true } },
+      },
       orderBy: { criadoEm: "asc" },
     }),
     db.membro.findMany({ where: { papel: "CORRETOR", ativo: true }, orderBy: { nome: "asc" } }),
@@ -28,6 +32,7 @@ export default async function Contratos() {
     vistoriaHora: c.vistoriaHora,
     corretor: c.corretor ? { nome: c.corretor.nome, cor: c.corretor.cor } : null,
     respEntrega: c.respEntrega ? { nome: c.respEntrega.nome } : null,
+    docsPendentes: c.documentos.length,
   }));
 
   return (
