@@ -44,7 +44,7 @@ export function WaBolha({
 /** Moldura de celular para previews */
 export function Celular({ children, titulo }: { children: React.ReactNode; titulo?: string }) {
   return (
-    <div className="mx-auto w-full max-w-[300px] rounded-[1.6rem] border border-[var(--hairline)] bg-[#0b141a] shadow-phone overflow-hidden">
+    <div className="celular mx-auto w-full max-w-[300px] rounded-[1.6rem] border border-[var(--hairline)] bg-[#0b141a] shadow-phone overflow-hidden">
       <div className="flex items-center gap-2 bg-[#1f2c33] px-3.5 py-2.5">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#ff77bd] to-[#b70f6e] text-[0.6rem] font-bold text-[#ffffff]">
           VB

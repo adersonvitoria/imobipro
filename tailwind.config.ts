@@ -20,9 +20,10 @@ const config: Config = {
           2: "var(--ink-2)",
           3: "var(--ink-3)",
         },
-        ok: "#8fca9f",
-        warn: "#d98e4a",
-        bad: "#e07a6a",
+        ok: "rgb(var(--ok-rgb) / <alpha-value>)",
+        warn: "rgb(var(--warn-rgb) / <alpha-value>)",
+        bad: "rgb(var(--bad-rgb) / <alpha-value>)",
+        info: "rgb(var(--info-rgb) / <alpha-value>)",
         wa: {
           out: "#005c4b",
           in: "#202c33",

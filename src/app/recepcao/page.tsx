@@ -57,7 +57,7 @@ export default async function Recepcao() {
             ) : (
               <ul className="space-y-2.5">
                 {tarefasRecepcao.map((t) => (
-                  <li key={t.id} className="rounded-xl border border-[var(--hairline)] bg-white/[0.015] px-3.5 py-3">
+                  <li key={t.id} className="rounded-xl border border-[var(--hairline)] bg-[var(--soft)] px-3.5 py-3">
                     <div className="flex items-center gap-2 text-[0.7rem]">
                       <Chip tom="ok">tarefa criada</Chip>
                       <span className="text-ink-3">para {t.responsavel.nome}</span>
@@ -67,7 +67,7 @@ export default async function Recepcao() {
                   </li>
                 ))}
                 {chamados.map((m) => (
-                  <li key={m.id} className="rounded-xl border border-[var(--hairline)] bg-white/[0.015] px-3.5 py-3">
+                  <li key={m.id} className="rounded-xl border border-[var(--hairline)] bg-[var(--soft)] px-3.5 py-3">
                     <div className="flex items-center gap-2 text-[0.7rem]">
                       <Chip tom="info">notificação interna</Chip>
                       <span className="text-ink-3">→ {m.paraNome}</span>

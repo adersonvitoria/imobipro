@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============ TEMA ESCURO (padrão) ============ */
 :root {
   --bg: #0e0a11;
   --bg-raised: #17101a;
@@ -10,10 +11,77 @@
   --ink: #f6eef4;
   --ink-2: #b9a9b5;
   --ink-3: #7f6e7c;
+
+  --shell: rgba(14, 10, 17, 0.72);
+  --shell-2: rgba(14, 10, 17, 0.88);
+  --soft: rgba(255, 255, 255, 0.02);
+  --soft-2: rgba(255, 255, 255, 0.05);
+
+  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%), #17101a;
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -14px rgba(0, 0, 0, 0.55);
+
+  --ok-rgb: 143 202 159;
+  --warn-rgb: 217 142 74;
+  --bad-rgb: 224 122 106;
+  --info-rgb: 158 195 216;
+
+  --grid-line: rgba(255, 255, 255, 0.055);
+  --chart-bar: #f65fb0;
+  --chart-bar-hover: #ff9fd0;
+
+  --wa-out-bg: #005c4b;
+  --wa-out-ink: #e7f6ef;
+  --wa-in-bg: #202c33;
+  --wa-in-ink: #e9edef;
+
+  --atmo: radial-gradient(1000px 460px at 72% -12%, rgba(237, 30, 143, 0.11), transparent 62%),
+    radial-gradient(760px 540px at -8% 18%, rgba(120, 16, 84, 0.07), transparent 55%),
+    radial-gradient(600px 600px at 105% 90%, rgba(237, 30, 143, 0.05), transparent 60%);
+  --grain-opacity: 0.045;
+}
+
+/* ============ TEMA CLARO ============ */
+html.claro {
+  --bg: #f7f1ee;
+  --bg-raised: #fffdfb;
+  --bg-overlay: #fbf4f1;
+  --hairline: rgba(183, 15, 110, 0.16);
+  --ink: #27181f;
+  --ink-2: #64505c;
+  --ink-3: #97828e;
+
+  --shell: rgba(255, 252, 250, 0.85);
+  --shell-2: rgba(255, 252, 250, 0.92);
+  --soft: rgba(39, 24, 31, 0.03);
+  --soft-2: rgba(39, 24, 31, 0.07);
+
+  --card-bg: #fffdfb;
+  --card-shadow: 0 1px 2px rgba(39, 24, 31, 0.04), 0 10px 28px -16px rgba(39, 24, 31, 0.18);
+
+  --ok-rgb: 18 122 66;
+  --warn-rgb: 173 88 14;
+  --bad-rgb: 185 40 30;
+  --info-rgb: 33 105 148;
+
+  --grid-line: rgba(39, 24, 31, 0.08);
+  --chart-bar: #d81b7f;
+  --chart-bar-hover: #ef4fa6;
+
+  --wa-out-bg: #d9fdd3;
+  --wa-out-ink: #103524;
+  --wa-in-bg: #ffffff;
+  --wa-in-ink: #1f2933;
+
+  --atmo: radial-gradient(1000px 460px at 72% -12%, rgba(237, 30, 143, 0.07), transparent 62%),
+    radial-gradient(760px 540px at -8% 18%, rgba(183, 15, 110, 0.05), transparent 55%);
+  --grain-opacity: 0.025;
 }
 
 html {
   color-scheme: dark;
+}
+html.claro {
+  color-scheme: light;
 }
 
 body {
@@ -21,6 +89,7 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* ---------- atmosfera ---------- */
@@ -29,10 +98,7 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(1000px 460px at 72% -12%, rgba(237, 30, 143, 0.11), transparent 62%),
-    radial-gradient(760px 540px at -8% 18%, rgba(120, 16, 84, 0.07), transparent 55%),
-    radial-gradient(600px 600px at 105% 90%, rgba(237, 30, 143, 0.05), transparent 60%);
+  background: var(--atmo);
 }
 
 .bg-grain {
@@ -40,18 +106,16 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.045;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
 /* ---------- superfícies ---------- */
 .card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%), var(--bg-raised);
+  background: var(--card-bg);
   border: 1px solid var(--hairline);
   border-radius: 1rem;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.03) inset,
-    0 12px 32px -14px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--card-shadow);
 }
 
 .hairline-b {
@@ -127,13 +191,14 @@ body {
   padding: 0.55rem 0.75rem 0.5rem;
   font-size: 0.83rem;
   line-height: 1.5;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
   white-space: pre-wrap;
   word-break: break-word;
+  max-width: min(34rem, 100%);
 }
 .wa-out {
-  background: #005c4b;
-  color: #e7f6ef;
+  background: var(--wa-out-bg);
+  color: var(--wa-out-ink);
   border-top-right-radius: 3px;
 }
 .wa-out::after {
@@ -142,12 +207,12 @@ body {
   top: 0;
   right: -7px;
   border: 8px solid transparent;
-  border-top-color: #005c4b;
+  border-top-color: var(--wa-out-bg);
   border-right-width: 0;
 }
 .wa-in {
-  background: #202c33;
-  color: #e9edef;
+  background: var(--wa-in-bg);
+  color: var(--wa-in-ink);
   border-top-left-radius: 3px;
 }
 .wa-in::after {
@@ -156,8 +221,16 @@ body {
   top: 0;
   left: -7px;
   border: 8px solid transparent;
-  border-top-color: #202c33;
+  border-top-color: var(--wa-in-bg);
   border-left-width: 0;
+}
+
+/* dentro da moldura de celular, o WhatsApp fica sempre no modo escuro */
+.celular {
+  --wa-out-bg: #005c4b;
+  --wa-out-ink: #e7f6ef;
+  --wa-in-bg: #202c33;
+  --wa-in-ink: #e9edef;
 }
 
 /* ---------- detalhes ---------- */
@@ -178,12 +251,4 @@ body {
 }
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(237, 30, 143, 0.38);
-}
-
-.gold-underline {
-  background-image: linear-gradient(90deg, rgba(237, 30, 143, 0.65), transparent);
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  padding-bottom: 2px;
 }

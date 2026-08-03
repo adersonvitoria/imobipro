@@ -229,6 +229,13 @@ export async function criarChamado(setor: string, nomeCliente: string, resumo: s
   return { ok: true, responsavel: membro.nome };
 }
 
+/** Analista IA: responde perguntas sobre a operação com snapshot ao vivo do banco */
+export async function perguntarAnalista(pergunta: string) {
+  const { coletarSnapshot, responder } = await import("@/lib/analista");
+  const snap = await coletarSnapshot();
+  return { resposta: responder(pergunta, snap), hora: snap.geradoEm, registros: snap.registros };
+}
+
 /** Restaura a demonstração ao estado original */
 export async function resetDemo() {
   await seedDemo(db);

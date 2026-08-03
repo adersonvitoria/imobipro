@@ -22,7 +22,7 @@ export default function TarefaToggle({
 
   return (
     <button
-      className="group flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.03]"
+      className="group flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[var(--soft-2)]"
       onClick={() => {
         setConcluida((v) => !v);
         start(async () => {

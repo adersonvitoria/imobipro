@@ -192,7 +192,7 @@ export default async function Hoje() {
             ) : (
               <ul className="space-y-2.5">
                 {entregas.map((e) => (
-                  <li key={e.id} className="rounded-xl border border-[var(--hairline)] bg-white/[0.015] px-3.5 py-3">
+                  <li key={e.id} className="rounded-xl border border-[var(--hairline)] bg-[var(--soft)] px-3.5 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-[0.8rem] text-brand">{e.entregaHora}</span>
                       <Chip tom={e.entregaData === hoje ? "ouro" : "neutro"}>

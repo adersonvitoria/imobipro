@@ -20,7 +20,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${display.variable} ${sans.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('imobipro-tema')==='claro')document.documentElement.classList.add('claro')}catch(e){}",
+          }}
+        />
+      </head>
       <body className="font-sans min-h-screen">
         <div className="bg-atmo" aria-hidden />
         <div className="bg-grain" aria-hidden />

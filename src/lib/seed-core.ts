@@ -8,6 +8,8 @@ export async function seedDemo(db: PrismaClient) {
   const amanha = addDays(hoje, 1);
 
   // limpa tudo (ordem respeita FKs)
+  await db.notaFiscal.deleteMany();
+  await db.lancamento.deleteMany();
   await db.mensagem.deleteMany();
   await db.evento.deleteMany();
   await db.tarefa.deleteMany();
@@ -50,6 +52,13 @@ export async function seedDemo(db: PrismaClient) {
       descricao: "Cada membro recebe sua lista de tarefas do dia — ninguém precisa lembrar ninguém.",
       template:
         "☀️ {{nome}}, bom dia! Sua agenda de hoje ({{data}}):\n\n{{lista}}\n\nQualquer mudança, o sistema te avisa por aqui. — {{imobiliaria}}",
+    },
+    {
+      tipo: "BOLETIM_GESTAO", grupo: "DIARIO", ordem: 0, hora: "07:45", destino: "EQUIPE",
+      nome: "Boletim da operação para a gestão",
+      descricao: "A gestão recebe o pulso completo da operação no WhatsApp — sem precisar centralizar nada.",
+      template:
+        "📊 *Boletim {{imobiliaria}} — {{data}}*\n\nBom dia, {{nome}}! Sua operação em 30 segundos:\n\n{{resumo}}\n\n_Gerado automaticamente pelo ImobiPRO. Pergunte \"como está a operação\" no Analista para detalhes._",
     },
     {
       tipo: "ENTREGA_VESPERA", grupo: "DIARIO", ordem: 2, hora: "08:00", destino: "INQUILINO",
@@ -319,6 +328,58 @@ export async function seedDemo(db: PrismaClient) {
       conteudo: "Oi Tainá! ✍️ Contrato do imóvel *Loja 02 · Av. Dorival C. de Oliveira* assinado com sucesso. Próxima etapa: vistoria de entrada — te avisamos assim que estiver agendada.",
       status: "SIMULADA", origem: "ETAPA", dedupeKey: `ETAPA_CONTRATO:${contratoAssinado.id}`,
       contratoId: contratoAssinado.id, criadaEm: spInstant(hoje, "10:05"),
+    },
+  });
+
+  // ---- Contas a pagar e a receber ------------------------------------------
+  const mesRef = (dia: number) => `${hoje.slice(0, 8)}${String(dia).padStart(2, "0")}`;
+  const auto = (venc: string) => (venc < hoje ? "LIQUIDADO" : "ABERTO");
+
+  const lancamentos: {
+    tipo: string; descricao: string; contraparte: string; categoria: string;
+    valor: number; vencimento: string; status: string;
+  }[] = [
+    // A receber — aluguéis do mês + taxa de intermediação
+    { tipo: "RECEBER", descricao: "Aluguel do mês — Apto 405 · Ed. Lucerna", contraparte: "Rodrigo Malta", categoria: "ALUGUEL", valor: 1500, vencimento: addDays(hoje, 3), status: "ABERTO" },
+    { tipo: "RECEBER", descricao: "Aluguel do mês — Casa 2 dorm · Barnabé", contraparte: "Simone Vargas", categoria: "ALUGUEL", valor: 1200, vencimento: mesRef(15), status: auto(mesRef(15)) },
+    { tipo: "RECEBER", descricao: "Aluguel do mês — Apto 108 · Res. Viena", contraparte: "Cristiano Leal", categoria: "ALUGUEL", valor: 980, vencimento: mesRef(20), status: auto(mesRef(20)) },
+    { tipo: "RECEBER", descricao: "Aluguel do mês — Sala 703 · Centro Empresarial", contraparte: "Juliana Castro", categoria: "ALUGUEL", valor: 2250, vencimento: mesRef(27), status: auto(mesRef(27)) },
+    { tipo: "RECEBER", descricao: "Aluguel em atraso — Casa 2 dorm · Bom Sucesso", contraparte: "Diego Fontoura", categoria: "ALUGUEL", valor: 1350, vencimento: addDays(hoje, -4), status: "ABERTO" },
+    { tipo: "RECEBER", descricao: "Taxa de intermediação — Loja 02 · Av. Dorival", contraparte: "Tainá Rocha", categoria: "TAXA", valor: 2600, vencimento: addDays(hoje, 6), status: "ABERTO" },
+    // A pagar — repasses + fornecedores + despesas
+    { tipo: "PAGAR", descricao: "Repasse — Apto 405 · Ed. Lucerna", contraparte: "Dona Iara Peixoto", categoria: "REPASSE", valor: 1350, vencimento: hoje, status: "ABERTO" },
+    { tipo: "PAGAR", descricao: "Repasse — Casa 2 dorm · Barnabé", contraparte: "Sr. Adão Pereira", categoria: "REPASSE", valor: 1080, vencimento: mesRef(16), status: auto(mesRef(16)) },
+    { tipo: "PAGAR", descricao: "Repasse — Apto 108 · Res. Viena", contraparte: "Sra. Marta Winter", categoria: "REPASSE", valor: 882, vencimento: mesRef(21), status: auto(mesRef(21)) },
+    { tipo: "PAGAR", descricao: "Repasse — Sala 703 · Centro Empresarial", contraparte: "Dr. Paulo Krieger", categoria: "REPASSE", valor: 2025, vencimento: mesRef(28), status: auto(mesRef(28)) },
+    { tipo: "PAGAR", descricao: "Reparo hidráulico — Apto 204 · Dom Feliciano", contraparte: "Hidráulica Silva", categoria: "FORNECEDOR", valor: 280, vencimento: addDays(hoje, 1), status: "ABERTO" },
+    { tipo: "PAGAR", descricao: "Chaveiro — cópias para entregas da semana", contraparte: "Chaveiro Central", categoria: "FORNECEDOR", valor: 120, vencimento: hoje, status: "ABERTO" },
+    { tipo: "PAGAR", descricao: "Anúncios — portais ZAP + OLX", contraparte: "OLX Brasil", categoria: "DESPESA", valor: 450, vencimento: addDays(hoje, 5), status: "ABERTO" },
+    { tipo: "PAGAR", descricao: "Energia elétrica — loja Centro", contraparte: "CEEE Equatorial", categoria: "DESPESA", valor: 310, vencimento: addDays(hoje, 2), status: "ABERTO" },
+    { tipo: "PAGAR", descricao: "Material de escritório", contraparte: "Papelaria Del Rei", categoria: "DESPESA", valor: 95, vencimento: addDays(hoje, -2), status: "LIQUIDADO" },
+  ];
+  for (const l of lancamentos) await db.lancamento.create({ data: l });
+
+  // ---- NFS-e — notas do mês (taxa de administração) -------------------------
+  const competencia = hoje.slice(0, 7);
+  const notas = [
+    { numero: 1041, tomador: "Dona Iara Peixoto", descricao: "Taxa de administração — Apto 405 · Ed. Lucerna", valor: 150 },
+    { numero: 1042, tomador: "Sr. Adão Pereira", descricao: "Taxa de administração — Casa 2 dorm · Barnabé", valor: 120 },
+    { numero: 1043, tomador: "Sra. Marta Winter", descricao: "Taxa de administração — Apto 108 · Res. Viena", valor: 98 },
+    { numero: 1044, tomador: "Dr. Paulo Krieger", descricao: "Taxa de administração — Sala 703 · Centro Empresarial", valor: 225 },
+  ];
+  for (const [i, n] of notas.entries()) {
+    await db.notaFiscal.create({
+      data: {
+        ...n, competencia, status: "EMITIDA",
+        emitidaEm: spInstant(addDays(hoje, -1), `${String(8 + i).padStart(2, "0")}:1${i}`),
+      },
+    });
+  }
+  await db.notaFiscal.create({
+    data: {
+      competencia, tomador: "Sr. Ermindo Weiss",
+      descricao: "Taxa de intermediação — Loja 02 · Av. Dorival",
+      valor: 2600, status: "PENDENTE",
     },
   });
 

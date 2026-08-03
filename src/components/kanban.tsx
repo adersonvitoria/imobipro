@@ -196,7 +196,7 @@ export default function Kanban({
                           </div>
                         )}
                         {c.etapa === "VISTORIA" && c.vistoriaData && (
-                          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-[#9ec3d8]/25 bg-[#9ec3d8]/5 px-2.5 py-1.5 text-[0.7rem] text-[#9ec3d8]">
+                          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-info/25 bg-info/10 px-2.5 py-1.5 text-[0.7rem] text-info">
                             <CalendarDays size={11} />
                             vistoria {fmtCurto(c.vistoriaData)} às {c.vistoriaHora}
                           </div>

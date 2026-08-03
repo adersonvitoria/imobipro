@@ -5,6 +5,7 @@ export function render(template: string, vars: Record<string, string>): string {
 
 /** Placeholders disponíveis por regra — exibidos na tela de régua */
 export const PLACEHOLDERS: Record<string, string[]> = {
+  BOLETIM_GESTAO: ["nome", "data", "resumo", "imobiliaria"],
   ENTREGA_VESPERA: ["nome", "imovel", "data", "hora", "responsavel", "loja", "horario_loja"],
   ENTREGA_DIA: ["nome", "imovel", "hora", "responsavel", "loja", "horario_loja"],
   VISTORIA_LEMBRETE: ["nome", "imovel", "data", "hora"],

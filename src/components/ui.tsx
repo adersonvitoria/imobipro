@@ -62,7 +62,7 @@ export function Chip({
     neutro: "border-[var(--hairline)] text-ink-3",
     ouro: "border-brand/40 text-brand bg-brand-faint",
     ok: "border-ok/30 text-ok bg-ok/5",
-    info: "border-[#9ec3d8]/30 text-[#9ec3d8] bg-[#9ec3d8]/5",
+    info: "border-info/30 text-info bg-info/10",
     aviso: "border-warn/30 text-warn bg-warn/5",
   };
   return (

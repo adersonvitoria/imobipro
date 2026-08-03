@@ -38,7 +38,7 @@ export default function ChartDisparos({ dados }: { dados: Ponto[] }) {
             x2={W - 4}
             y1={y(teto * f)}
             y2={y(teto * f)}
-            stroke="rgba(255,255,255,0.055)"
+            stroke="var(--grid-line)"
             strokeWidth={1}
           />
         ))}
@@ -73,7 +73,7 @@ export default function ChartDisparos({ dados }: { dados: Ponto[] }) {
                 width={bw}
                 height={alt}
                 rx={4}
-                fill={emHover ? "#ff9fd0" : "#f65fb0"}
+                fill={emHover ? "var(--chart-bar-hover)" : "var(--chart-bar)"}
                 opacity={ativo === null || emHover ? 1 : 0.45}
                 style={{ transition: "opacity .15s ease, fill .15s ease", pointerEvents: "none" }}
               />

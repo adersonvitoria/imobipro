@@ -52,11 +52,44 @@ model Contrato {
   respEntrega     Membro?    @relation("respEntrega", fields: [respEntregaId], references: [id])
   vistoriaData    String?
   vistoriaHora    String?
-  criadoEm        DateTime   @default(now())
-  atualizadoEm    DateTime   @updatedAt
+  criadoEm        DateTime     @default(now())
+  atualizadoEm    DateTime     @updatedAt
   eventos         Evento[]
   mensagens       Mensagem[]
   tarefas         Tarefa[]
+  lancamentos     Lancamento[]
+  notas           NotaFiscal[]
+}
+
+// Contas a pagar e a receber
+model Lancamento {
+  id          String    @id @default(cuid())
+  tipo        String // PAGAR | RECEBER
+  descricao   String
+  contraparte String
+  categoria   String // ALUGUEL | REPASSE | FORNECEDOR | DESPESA | TAXA
+  valor       Int // em reais
+  vencimento  String // YYYY-MM-DD
+  status      String    @default("ABERTO") // ABERTO | LIQUIDADO
+  contratoId  String?
+  contrato    Contrato? @relation(fields: [contratoId], references: [id])
+  criadoEm    DateTime  @default(now())
+
+  @@index([tipo, status, vencimento])
+}
+
+// NFS-e — nota fiscal de serviço (taxa de administração / intermediação)
+model NotaFiscal {
+  id          String    @id @default(cuid())
+  numero      Int?      @unique
+  competencia String // YYYY-MM
+  tomador     String
+  descricao   String
+  valor       Int
+  status      String    @default("EMITIDA") // EMITIDA | PENDENTE
+  emitidaEm   DateTime  @default(now())
+  contratoId  String?
+  contrato    Contrato? @relation(fields: [contratoId], references: [id])
 }
 
 model Evento {

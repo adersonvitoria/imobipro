@@ -169,10 +169,11 @@ export async function rodarDisparosDiarios(origem: "CRON" | "MANUAL") {
     }
   }
 
-  // 5) Repasse ao proprietário (dia fixo do mês)
+  // 5) Repasse ao proprietário (dia fixo do mês) + emissão automática da NFS-e da taxa
   const rRepasse = regras.get("REPASSE_PROPRIETARIO");
   if (rRepasse?.ativo && dayOfMonth(hoje) === cfg.diaRepasse) {
     const ativos = await db.contrato.findMany({ where: { etapa: "ATIVO" } });
+    const compet = hoje.slice(0, 7);
     for (const c of ativos) {
       await tenta({
         regraTipo: rRepasse.tipo,
@@ -189,6 +190,25 @@ export async function rodarDisparosDiarios(origem: "CRON" | "MANUAL") {
           imovel: c.imovel,
         }),
       });
+
+      // NFS-e da taxa de administração — uma por competência, junto do repasse
+      const jaEmitida = await db.notaFiscal.findFirst({
+        where: { competencia: compet, tomador: c.proprietario, status: "EMITIDA" },
+      });
+      if (!jaEmitida) {
+        const max = await db.notaFiscal.aggregate({ _max: { numero: true } });
+        await db.notaFiscal.create({
+          data: {
+            numero: (max._max.numero ?? 1000) + 1,
+            competencia: compet,
+            tomador: c.proprietario,
+            descricao: `Taxa de administração — ${c.imovel}`,
+            valor: Math.max(1, Math.round(c.valor * 0.1)),
+            status: "EMITIDA",
+            contratoId: c.id,
+          },
+        });
+      }
     }
   }
 
@@ -227,6 +247,35 @@ export async function rodarDisparosDiarios(origem: "CRON" | "MANUAL") {
           lista: linhas,
         }),
       });
+    }
+  }
+
+  // 7) Boletim da operação para a gestão
+  const rBoletim = regras.get("BOLETIM_GESTAO");
+  if (rBoletim?.ativo) {
+    const { coletarSnapshot, resumoBoletim } = await import("./analista");
+    const gestores = await db.membro.findMany({ where: { papel: "GESTAO", ativo: true } });
+    if (gestores.length > 0) {
+      const snap = await coletarSnapshot();
+      const resumo = resumoBoletim(snap);
+      for (const g of gestores) {
+        await tenta({
+          regraTipo: rBoletim.tipo,
+          regraNome: rBoletim.nome,
+          paraNome: g.nome,
+          paraZap: g.whatsapp,
+          paraTipo: "EQUIPE",
+          origem,
+          membroId: g.id,
+          dedupeKey: `BOLETIM:${g.id}:${hoje}`,
+          conteudo: render(rBoletim.template, {
+            ...base,
+            nome: primeiroNome(g.nome),
+            data: fmtLongo(hoje),
+            resumo,
+          }),
+        });
+      }
     }
   }
 

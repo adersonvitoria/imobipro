@@ -24,6 +24,8 @@ const SAMPLE: Record<string, string> = {
   lista: "• 09:00 — Entrega de chaves — Camila Ferreira\n• 14:00 — Vistoria de entrada — Felipe Xavier",
   imobiliaria: "VeraBrokers",
   repasse: "dia 5",
+  resumo:
+    "🔑 Entregas de chave hoje (2):\n   • 10:30 — Henrique (Apto 501) c/ Marilice\n   • 15:00 — Débora (Casa · Pq. dos Anjos) c/ Diego\n💰 Carteira ativa: R$ 5.930/mês (4 contratos)\n📥 A receber: R$ 9.880 em aberto\n📤 A pagar: R$ 6.497\n🧾 NFS-e: 4 emitidas no mês\n✅ Nenhum alerta — operação redonda",
 };
 
 const DESTINO: Record<string, { tom: "info" | "ouro" | "ok"; rotulo: string }> = {
@@ -82,7 +84,7 @@ export default function RegraCard({
             });
           }}
           className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
-            ativo ? "bg-brand/80 border-brand" : "bg-white/5 border-[var(--hairline)]"
+            ativo ? "bg-brand/80 border-brand" : "bg-[var(--soft-2)] border-[var(--hairline)]"
           }`}
         >
           <span
