@@ -159,17 +159,17 @@ export default function Kanban({
         </a>
       </div>
 
-      <div className="-mx-1 flex min-h-0 flex-1 gap-3.5 overflow-x-auto px-1 pb-3">
+      <div className="-mx-1 flex min-h-0 flex-1 gap-3.5 overflow-x-auto px-1 pb-3 xl:mx-0 xl:grid xl:grid-cols-7 xl:gap-2.5 xl:overflow-visible xl:px-0 xl:pb-0">
         {COLUNAS.map((col) => {
           const cartoes = porColuna.get(col.etapa) ?? [];
           return (
-            <div key={col.etapa} className="flex w-[272px] shrink-0 flex-col min-h-0">
-              <div className="mb-2.5 flex items-center gap-2 px-1">
-                <span className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-2">
+            <div key={col.etapa} className="flex w-[272px] shrink-0 flex-col min-h-0 xl:w-auto xl:min-w-0 xl:shrink">
+              <div className="mb-2.5 flex min-w-0 items-center gap-1.5 px-1">
+                <span className="truncate text-[0.66rem] font-medium uppercase tracking-[0.1em] text-ink-2">
                   {col.titulo}
                 </span>
-                <span className="font-mono text-[0.62rem] text-ink-3">{cartoes.length}</span>
-                <span className="ml-auto h-px flex-1 max-w-[60px] bg-[var(--hairline)]" />
+                <span className="font-mono text-[0.6rem] text-ink-3">{cartoes.length}</span>
+                <span className="ml-auto h-px w-4 shrink-0 bg-[var(--hairline)]" />
               </div>
 
               <div className="min-h-[120px] flex-1 space-y-2.5 lg:overflow-y-auto lg:pr-1 lg:min-h-0">
@@ -182,14 +182,14 @@ export default function Kanban({
                         initial={{ opacity: 0, y: 8, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                        className="card p-3.5"
+                        className="card p-3 xl:p-2.5"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[0.62rem] text-ink-3">{c.codigo}</span>
-                          <span className="font-mono text-[0.72rem] text-brand">{brl(c.valor)}</span>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="truncate font-mono text-[0.6rem] text-ink-3">{c.codigo}</span>
+                          <span className="shrink-0 font-mono text-[0.7rem] text-brand">{brl(c.valor)}</span>
                         </div>
-                        <div className="mt-1.5 text-[0.9rem] font-medium leading-tight">{c.inquilino}</div>
-                        <div className="mt-0.5 text-[0.72rem] text-ink-3 leading-snug">
+                        <div className="mt-1 truncate text-[0.84rem] font-medium leading-tight">{c.inquilino}</div>
+                        <div className="mt-0.5 line-clamp-2 text-[0.68rem] leading-snug text-ink-3">
                           {c.imovel} · {c.bairro}
                         </div>
 
@@ -204,16 +204,20 @@ export default function Kanban({
                         )}
 
                         {c.etapa === "CHAVES_PRONTAS" && c.entregaData && (
-                          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-brand/25 bg-brand-faint px-2.5 py-1.5 text-[0.7rem] text-brand">
-                            <KeyRound size={11} />
-                            entrega {fmtCurto(c.entregaData)} às {c.entregaHora}
-                            {c.respEntrega && ` · ${c.respEntrega.nome.split(" ")[0]}`}
+                          <div className="mt-2 flex min-w-0 items-center gap-1 rounded-lg border border-brand/25 bg-brand-faint px-2 py-1 text-[0.64rem] text-brand">
+                            <KeyRound size={10} className="shrink-0" />
+                            <span className="truncate">
+                              {fmtCurto(c.entregaData)} às {c.entregaHora}
+                              {c.respEntrega && ` · ${c.respEntrega.nome.split(" ")[0]}`}
+                            </span>
                           </div>
                         )}
                         {c.etapa === "VISTORIA" && c.vistoriaData && (
-                          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-info/25 bg-info/10 px-2.5 py-1.5 text-[0.7rem] text-info">
-                            <CalendarDays size={11} />
-                            vistoria {fmtCurto(c.vistoriaData)} às {c.vistoriaHora}
+                          <div className="mt-2 flex min-w-0 items-center gap-1 rounded-lg border border-info/25 bg-info/10 px-2 py-1 text-[0.64rem] text-info">
+                            <CalendarDays size={10} className="shrink-0" />
+                            <span className="truncate">
+                              vistoria {fmtCurto(c.vistoriaData)} às {c.vistoriaHora}
+                            </span>
                           </div>
                         )}
                         {c.etapa === "DESOCUPACAO" && (
@@ -223,32 +227,32 @@ export default function Kanban({
                           </div>
                         )}
 
-                        <div className="mt-3 flex items-center gap-2">
+                        <div className="mt-2.5 flex min-w-0 items-center gap-1.5">
                           {c.corretor && (
-                            <span title={`Corretor: ${c.corretor.nome}`}>
-                              <Avatar nome={c.corretor.nome} cor={c.corretor.cor} tamanho={22} />
+                            <span className="hidden shrink-0 min-[1750px]:block" title={`Corretor: ${c.corretor.nome}`}>
+                              <Avatar nome={c.corretor.nome} cor={c.corretor.cor} tamanho={20} />
                             </span>
                           )}
                           {acao ? (
                             <button
-                              className="btn-ghost flex-1 justify-center !py-1.5 !text-[0.72rem] hover:!border-brand/50 hover:!text-brand"
+                              className="btn-ghost min-w-0 flex-1 justify-center !px-1.5 !py-1.5 !text-[0.66rem] hover:!border-brand/50 hover:!text-brand"
                               disabled={ocupado === c.id}
                               onClick={() => avancar(c)}
                             >
-                              <acao.icon size={12} />
-                              {ocupado === c.id ? "Disparando…" : acao.rotulo}
+                              <acao.icon size={11} className="shrink-0" />
+                              <span className="truncate">{ocupado === c.id ? "Disparando…" : acao.rotulo}</span>
                             </button>
                           ) : c.etapa === "ATIVO" ? (
                             <button
-                              className="btn-ghost flex-1 justify-center !py-1.5 !text-[0.7rem]"
+                              className="btn-ghost min-w-0 flex-1 justify-center !px-1.5 !py-1.5 !text-[0.64rem]"
                               disabled={ocupado === c.id}
                               onClick={() => desocupar(c)}
                             >
-                              <LogOut size={12} />
-                              Iniciar desocupação
+                              <LogOut size={11} className="shrink-0" />
+                              <span className="truncate">Iniciar desocupação</span>
                             </button>
                           ) : (
-                            <span className="flex-1 text-center">
+                            <span className="min-w-0 flex-1 text-center">
                               <Chip tom="ouro">acompanhando</Chip>
                             </span>
                           )}
