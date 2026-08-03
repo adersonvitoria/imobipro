@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Configuração única da imobiliária
+model Config {
+  id           Int    @id @default(1)
+  imobiliaria  String
+  lojaEndereco String
+  lojaHorario  String
+  whatsappLoja String
+  diaRepasse   Int    @default(5)
+}
+
+model Membro {
+  id        String     @id @default(cuid())
+  nome      String
+  papel     String // CORRETOR | ADMINISTRATIVO | FINANCEIRO | VISTORIA | GESTAO
+  whatsapp  String
+  cor       String
+  ativo     Boolean    @default(true)
+  tarefas   Tarefa[]
+  contratos Contrato[] @relation("corretor")
+  entregas  Contrato[] @relation("respEntrega")
+  mensagens Mensagem[]
+}
+
+model Contrato {
+  id              String     @id @default(cuid())
+  codigo          String     @unique
+  etapa           String // FICHA_APROVADA | CONTRATO_ASSINADO | VISTORIA | CHAVES_PRONTAS | ATIVO | DESOCUPACAO
+  imovel          String
+  endereco        String
+  bairro          String
+  valor           Int // em reais
+  diaVencimento   Int        @default(10)
+  inquilino       String
+  inquilinoZap    String
+  proprietario    String
+  proprietarioZap String
+  corretorId      String?
+  corretor        Membro?    @relation("corretor", fields: [corretorId], references: [id])
+  entregaData     String? // YYYY-MM-DD
+  entregaHora     String?
+  respEntregaId   String?
+  respEntrega     Membro?    @relation("respEntrega", fields: [respEntregaId], references: [id])
+  vistoriaData    String?
+  vistoriaHora    String?
+  criadoEm        DateTime   @default(now())
+  atualizadoEm    DateTime   @updatedAt
+  eventos         Evento[]
+  mensagens       Mensagem[]
+  tarefas         Tarefa[]
+}
+
+model Evento {
+  id         String   @id @default(cuid())
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id])
+  titulo     String
+  criadoEm   DateTime @default(now())
+}
+
+model Tarefa {
+  id            String    @id @default(cuid())
+  titulo        String
+  tipo          String // ENTREGA_CHAVE | VISTORIA | DESOCUPACAO | REPARO | ATENDIMENTO | OUTRO
+  data          String // YYYY-MM-DD
+  hora          String?
+  concluida     Boolean   @default(false)
+  responsavelId String
+  responsavel   Membro    @relation(fields: [responsavelId], references: [id])
+  contratoId    String?
+  contrato      Contrato? @relation(fields: [contratoId], references: [id])
+  criadoEm      DateTime  @default(now())
+}
+
+model Regra {
+  id        String  @id @default(cuid())
+  tipo      String  @unique
+  grupo     String // DIARIO | INSTANTANEO
+  nome      String
+  descricao String
+  destino   String // INQUILINO | PROPRIETARIO | EQUIPE
+  hora      String?
+  ativo     Boolean @default(true)
+  template  String  @db.Text
+  ordem     Int     @default(0)
+}
+
+model Mensagem {
+  id         String    @id @default(cuid())
+  regraTipo  String
+  regraNome  String
+  paraNome   String
+  paraZap    String
+  paraTipo   String // INQUILINO | PROPRIETARIO | EQUIPE
+  conteudo   String    @db.Text
+  status     String // SIMULADA | ENVIADA | ERRO
+  origem     String // CRON | MANUAL | ETAPA | RECEPCAO
+  dedupeKey  String?   @unique
+  contratoId String?
+  contrato   Contrato? @relation(fields: [contratoId], references: [id])
+  membroId   String?
+  membro     Membro?   @relation(fields: [membroId], references: [id])
+  criadaEm   DateTime  @default(now())
+
+  @@index([criadaEm])
+}

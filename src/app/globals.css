@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0e0a11;
+  --bg-raised: #17101a;
+  --bg-overlay: #1f1522;
+  --hairline: rgba(237, 30, 143, 0.16);
+  --ink: #f6eef4;
+  --ink-2: #b9a9b5;
+  --ink-3: #7f6e7c;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- atmosfera ---------- */
+.bg-atmo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1000px 460px at 72% -12%, rgba(237, 30, 143, 0.11), transparent 62%),
+    radial-gradient(760px 540px at -8% 18%, rgba(120, 16, 84, 0.07), transparent 55%),
+    radial-gradient(600px 600px at 105% 90%, rgba(237, 30, 143, 0.05), transparent 60%);
+}
+
+.bg-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+/* ---------- superfícies ---------- */
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%), var(--bg-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 12px 32px -14px rgba(0, 0, 0, 0.55);
+}
+
+.hairline-b {
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* ---------- botões ---------- */
+.btn-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #ff77bd, #ed1e8f 52%, #b70f6e);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset, 0 10px 26px -10px rgba(237, 30, 143, 0.55);
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.btn-brand:hover {
+  filter: brightness(1.07);
+}
+.btn-brand:active {
+  transform: translateY(1px);
+}
+.btn-brand:disabled {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--hairline);
+  color: var(--ink-2);
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+.btn-ghost:hover {
+  color: var(--ink);
+  border-color: rgba(237, 30, 143, 0.45);
+  background: rgba(237, 30, 143, 0.08);
+}
+
+/* ---------- campos ---------- */
+.field {
+  width: 100%;
+  background: var(--bg-overlay);
+  border: 1px solid var(--hairline);
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.field:focus {
+  border-color: rgba(237, 30, 143, 0.55);
+}
+.field::placeholder {
+  color: var(--ink-3);
+}
+
+/* ---------- bolhas WhatsApp ---------- */
+.wa-bubble {
+  position: relative;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.75rem 0.5rem;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.wa-out {
+  background: #005c4b;
+  color: #e7f6ef;
+  border-top-right-radius: 3px;
+}
+.wa-out::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -7px;
+  border: 8px solid transparent;
+  border-top-color: #005c4b;
+  border-right-width: 0;
+}
+.wa-in {
+  background: #202c33;
+  color: #e9edef;
+  border-top-left-radius: 3px;
+}
+.wa-in::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -7px;
+  border: 8px solid transparent;
+  border-top-color: #202c33;
+  border-left-width: 0;
+}
+
+/* ---------- detalhes ---------- */
+::selection {
+  background: rgba(237, 30, 143, 0.35);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(237, 30, 143, 0.22);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(237, 30, 143, 0.38);
+}
+
+.gold-underline {
+  background-image: linear-gradient(90deg, rgba(237, 30, 143, 0.65), transparent);
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  padding-bottom: 2px;
+}
