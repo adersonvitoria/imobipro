@@ -4,18 +4,24 @@ export function TituloPagina({
   sobre,
   titulo,
   children,
+  compacto = false,
 }: {
   sobre: string;
   titulo: React.ReactNode;
   children?: React.ReactNode;
+  compacto?: boolean;
 }) {
   return (
-    <header className="mb-7 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
+    <header
+      className={`${compacto ? "mb-4" : "mb-7"} flex flex-wrap items-end justify-between gap-3 animate-fade-up`}
+    >
       <div>
-        <div className="mb-1.5 text-[0.66rem] uppercase tracking-[0.22em] text-brand/80">
-          {sobre}
-        </div>
-        <h1 className="font-display text-[1.9rem] sm:text-[2.3rem] leading-[1.05] tracking-tight">
+        <div className="mb-1 text-[0.66rem] uppercase tracking-[0.22em] text-brand/80">{sobre}</div>
+        <h1
+          className={`font-display leading-[1.05] tracking-tight ${
+            compacto ? "text-[1.55rem] sm:text-[1.85rem]" : "text-[1.9rem] sm:text-[2.3rem]"
+          }`}
+        >
           {titulo}
         </h1>
       </div>

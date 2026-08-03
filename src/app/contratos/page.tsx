@@ -36,8 +36,9 @@ export default async function Contratos() {
   }));
 
   return (
-    <div>
+    <div className="flex flex-col lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
       <TituloPagina
+        compacto
         sobre="esteira de locação"
         titulo={
           <>
@@ -45,7 +46,7 @@ export default async function Contratos() {
           </>
         }
       />
-      <div className="animate-fade-up" style={{ animationDelay: "80ms" }}>
+      <div className="flex min-h-0 flex-1 flex-col animate-fade-up" style={{ animationDelay: "80ms" }}>
         <Kanban
           contratos={cartoes}
           corretores={corretores.map((c) => ({ id: c.id, nome: c.nome }))}

@@ -62,6 +62,50 @@ model Contrato {
   sinistros       Sinistro[]
   cobrancas       Cobranca[]
   documentos      Documento[]
+  ficha           Ficha?
+}
+
+// Ficha digital completa — dados validados de locatário e proprietário
+model Ficha {
+  id         String    @id @default(cuid())
+  contratoId String?   @unique
+  contrato   Contrato? @relation(fields: [contratoId], references: [id])
+
+  locNome        String
+  locCpf         String
+  locRg          String
+  locNascimento  String
+  locTelefone    String
+  locEmail       String
+  locEstadoCivil String
+  locProfissao   String
+  locEndereco    String
+
+  propNome        String
+  propCpf         String
+  propRg          String
+  propNascimento  String
+  propTelefone    String
+  propEmail       String
+  propEstadoCivil String
+  propProfissao   String
+  propEndereco    String
+
+  recebimento String // PIX | TRANSFERENCIA
+  pixChave    String?
+  banco       String?
+  agencia     String?
+  conta       String?
+
+  imovelEndereco  String
+  imovelBairro    String
+  valor           Int
+  diaVencimento   Int
+  matricula       String
+  temCondominio   Boolean @default(false)
+  condominioValor Int?
+
+  criadaEm DateTime @default(now())
 }
 
 // Pasta digital — documentos de inquilinos e proprietários

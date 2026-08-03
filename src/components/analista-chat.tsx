@@ -55,7 +55,7 @@ export default function AnalistaChat({
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card flex w-full flex-col overflow-hidden lg:h-full">
       {/* cabeçalho */}
       <div className="flex items-center gap-3 px-5 py-4 hairline-b bg-[var(--soft)]">
         <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#ff77bd] to-[#b70f6e] text-white shadow-glow">
@@ -71,7 +71,7 @@ export default function AnalistaChat({
       </div>
 
       {/* conversa */}
-      <div className="max-h-[520px] min-h-[360px] overflow-y-auto px-4 sm:px-5 py-5 space-y-4">
+      <div className="max-h-[520px] min-h-[320px] flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-5 lg:max-h-none lg:min-h-0">
         {msgs.map((m, i) =>
           m.de === "ai" ? (
             <div key={i} className="flex gap-2.5 pr-2 sm:pr-10">

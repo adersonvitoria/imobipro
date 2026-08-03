@@ -28,8 +28,15 @@ export default function ChartDisparos({ dados }: { dados: Ponto[] }) {
   const y = (v: number) => padT + plotH - (v / teto) * plotH;
 
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Disparos automáticos por dia, últimos 14 dias">
+    <div className="h-full w-full">
+      <div className="relative mx-auto w-full lg:h-full lg:w-fit lg:max-w-full">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full lg:h-full lg:w-auto lg:max-w-full"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Disparos automáticos por dia, últimos 14 dias"
+      >
         {/* linhas de grade recessivas */}
         {[0.5, 1].map((f) => (
           <line
@@ -107,6 +114,7 @@ export default function ChartDisparos({ dados }: { dados: Ponto[] }) {
           <span className="font-medium text-ink">{dados[ativo].total} disparos</span>
         </div>
       )}
+      </div>
 
       {/* tabela acessível equivalente */}
       <table className="sr-only">

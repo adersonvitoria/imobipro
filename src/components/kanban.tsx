@@ -153,17 +153,17 @@ export default function Kanban({
           Avançou a etapa aqui → <span className="text-ink-2">o cliente recebe WhatsApp na hora</span>. Sem
           planilha, sem lembrete, sem cobrança interna.
         </p>
-        <button className="btn-brand shrink-0" onClick={() => setModal(true)}>
+        <a href="/ficha" className="btn-brand shrink-0">
           <Plus size={15} strokeWidth={2.5} />
-          Novo contrato
-        </button>
+          Ficha digital
+        </a>
       </div>
 
-      <div className="flex gap-3.5 overflow-x-auto pb-4 -mx-1 px-1">
+      <div className="-mx-1 flex min-h-0 flex-1 gap-3.5 overflow-x-auto px-1 pb-3">
         {COLUNAS.map((col) => {
           const cartoes = porColuna.get(col.etapa) ?? [];
           return (
-            <div key={col.etapa} className="w-[272px] shrink-0">
+            <div key={col.etapa} className="flex w-[272px] shrink-0 flex-col min-h-0">
               <div className="mb-2.5 flex items-center gap-2 px-1">
                 <span className="text-[0.72rem] font-medium uppercase tracking-[0.12em] text-ink-2">
                   {col.titulo}
@@ -172,7 +172,7 @@ export default function Kanban({
                 <span className="ml-auto h-px flex-1 max-w-[60px] bg-[var(--hairline)]" />
               </div>
 
-              <div className="space-y-2.5 min-h-[120px]">
+              <div className="min-h-[120px] flex-1 space-y-2.5 lg:overflow-y-auto lg:pr-1 lg:min-h-0">
                 {cartoes.map((c) => {
                     const acao = ACAO[c.etapa];
                     return (

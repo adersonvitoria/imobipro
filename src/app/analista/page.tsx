@@ -46,8 +46,9 @@ export default async function Analista() {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
       <TituloPagina
+        compacto
         sobre="inteligência sobre os seus dados"
         titulo={
           <>
@@ -56,19 +57,12 @@ export default async function Analista() {
         }
       />
 
-      <p className="-mt-4 mb-7 max-w-2xl text-[0.9rem] text-ink-2 animate-fade-up">
-        O Analista lê <span className="text-ink">tudo</span> — contratos, entregas, tarefas,
-        contas a pagar e a receber, notas fiscais, boletos e disparos — e responde na hora, com
-        números reais. A gestão ainda recebe um{" "}
-        <span className="text-ink">boletim diário às 07:45 no WhatsApp</span>.
-      </p>
-
-      <div className="grid lg:grid-cols-3 gap-3.5 items-start">
-        <div className="lg:col-span-2 animate-fade-up" style={{ animationDelay: "80ms" }}>
+      <div className="grid flex-1 min-h-0 gap-3 lg:grid-cols-3">
+        <div className="min-h-0 lg:col-span-2 animate-fade-up lg:flex" style={{ animationDelay: "80ms" }}>
           <AnalistaChat inicial={inicial} />
         </div>
 
-        <div className="space-y-3.5">
+        <div className="space-y-3 min-h-0 lg:overflow-y-auto lg:pr-1">
           <section className="card p-5 animate-fade-up" style={{ animationDelay: "120ms" }}>
             <h2 className="mb-3.5 flex items-center gap-2 font-display text-[1.12rem]">
               <Activity size={15} className="text-brand" />

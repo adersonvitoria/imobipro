@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bot,
+  FilePlus2,
   FileSignature,
   FolderOpen,
   KeyRound,
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/", label: "Hoje", icon: Sun },
   { href: "/analista", label: "Analista", icon: Sparkles },
   { href: "/recepcao", label: "Recepção", icon: Bot },
+  { href: "/ficha", label: "Ficha", icon: FilePlus2, soDesktop: true },
   { href: "/contratos", label: "Contratos", icon: FileSignature },
   { href: "/documentos", label: "Docs", icon: FolderOpen },
   { href: "/mensagens", label: "Mensagens", icon: MessagesSquare },
@@ -103,7 +105,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {/* Nav mobile */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-[var(--hairline)] bg-[var(--shell-2)] backdrop-blur-xl">
         <div className="grid grid-cols-8">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.filter((n) => !n.soDesktop).map(({ href, label, icon: Icon }) => {
             const ativo = pathname === href;
             return (
               <Link

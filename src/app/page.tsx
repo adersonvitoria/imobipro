@@ -89,8 +89,9 @@ export default async function Hoje() {
   const simulado = modoEnvio() === "SIMULADO";
 
   return (
-    <div>
+    <div className="flex flex-col lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
       <TituloPagina
+        compacto
         sobre={fmtLongo(hoje)}
         titulo={
           <>
@@ -103,20 +104,15 @@ export default async function Hoje() {
         <RunButton />
       </TituloPagina>
 
-      <p className="-mt-4 mb-7 max-w-2xl text-[0.9rem] text-ink-2 animate-fade-up">
-        A sua central já sabe o que precisa acontecer hoje — entregas de chave, boletos,
-        repasses e a agenda de cada um — <span className="text-ink">e avisa todo mundo sozinho</span>.
-      </p>
-
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 animate-fade-up" style={{ animationDelay: "60ms" }}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-fade-up" style={{ animationDelay: "60ms" }}>
         <Kpi rotulo="Disparos hoje" valor={msgsHoje} detalhe="mensagens automáticas" icon={Radio} destaque />
         <Kpi
           rotulo="Entregas de chave"
           valor={
             <>
               {entregasHoje.length}
-              <span className="text-[1.1rem] text-ink-3"> hoje · {entregasAmanha.length} amanhã</span>
+              <span className="text-[1.05rem] text-ink-3"> hoje · {entregasAmanha.length} amanhã</span>
             </>
           }
           detalhe="cada inquilino já sabe hora e local"
@@ -131,15 +127,19 @@ export default async function Hoje() {
         />
       </div>
 
-      <div className="mt-4 grid lg:grid-cols-3 gap-3.5">
+      {/* Grade principal — preenche o restante da tela no desktop */}
+      <div className="mt-3 grid flex-1 min-h-0 gap-3 lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)_minmax(0,14.5rem)]">
         {/* Feed de disparos */}
-        <section className="card lg:col-span-2 p-5 animate-fade-up" style={{ animationDelay: "120ms" }}>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-display text-[1.12rem]">
-              <Zap size={15} className="text-brand" />
+        <section
+          className="card flex min-h-0 flex-col p-4 animate-fade-up lg:col-span-6"
+          style={{ animationDelay: "120ms" }}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-display text-[1.05rem]">
+              <Zap size={14} className="text-brand" />
               Disparos de hoje
             </h2>
-            <span className="font-mono text-[0.68rem] text-ink-3">{msgsHoje} mensagens</span>
+            <span className="font-mono text-[0.66rem] text-ink-3">{msgsHoje} mensagens</span>
           </div>
 
           {feed.length === 0 ? (
@@ -148,7 +148,7 @@ export default async function Hoje() {
               dica="Clique em “Rodar disparos de hoje” e veja a mágica acontecer."
             />
           ) : (
-            <ul className="space-y-4 max-h-[560px] overflow-y-auto pr-2">
+            <ul className="min-h-0 flex-1 space-y-3.5 overflow-y-auto pr-2 max-h-[480px] lg:max-h-none">
               {feed.map((m) => {
                 const tipo = TOM_PARA[m.paraTipo] ?? TOM_PARA.INQUILINO;
                 return (
@@ -170,7 +170,7 @@ export default async function Hoje() {
                         </a>
                       </span>
                     </div>
-                    <div className="flex justify-end pl-6 sm:pl-16">
+                    <div className="flex justify-end pl-6 sm:pl-14">
                       <WaBolha texto={m.conteudo} hora={m.criadaEm} />
                     </div>
                   </li>
@@ -180,139 +180,130 @@ export default async function Hoje() {
           )}
         </section>
 
-        {/* Coluna direita */}
-        <div className="space-y-3.5">
-          <section className="card p-5 animate-fade-up" style={{ animationDelay: "160ms" }}>
-            <h2 className="mb-3.5 flex items-center gap-2 font-display text-[1.12rem]">
-              <KeyRound size={15} className="text-brand" />
-              Entregas de chaves
-            </h2>
-            {entregas.length === 0 ? (
-              <Vazio titulo="Sem entregas programadas." />
-            ) : (
-              <ul className="space-y-2.5">
-                {entregas.map((e) => (
-                  <li key={e.id} className="rounded-xl border border-[var(--hairline)] bg-[var(--soft)] px-3.5 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[0.8rem] text-brand">{e.entregaHora}</span>
-                      <Chip tom={e.entregaData === hoje ? "ouro" : "neutro"}>
-                        {e.entregaData === hoje ? "hoje" : "amanhã"}
-                      </Chip>
-                      <span className="ml-auto font-mono text-[0.62rem] text-ink-3">{e.codigo}</span>
+        {/* Entregas de chaves */}
+        <section
+          className="card flex min-h-0 flex-col p-4 animate-fade-up lg:col-span-3"
+          style={{ animationDelay: "160ms" }}
+        >
+          <h2 className="mb-3 flex items-center gap-2 font-display text-[1.05rem]">
+            <KeyRound size={14} className="text-brand" />
+            Entregas de chaves
+          </h2>
+          {entregas.length === 0 ? (
+            <Vazio titulo="Sem entregas programadas." />
+          ) : (
+            <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1 max-h-[420px] lg:max-h-none">
+              {entregas.map((e) => (
+                <li key={e.id} className="rounded-xl border border-[var(--hairline)] bg-[var(--soft)] px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[0.78rem] text-brand">{e.entregaHora}</span>
+                    <Chip tom={e.entregaData === hoje ? "ouro" : "neutro"}>
+                      {e.entregaData === hoje ? "hoje" : "amanhã"}
+                    </Chip>
+                    <span className="ml-auto font-mono text-[0.6rem] text-ink-3">{e.codigo}</span>
+                  </div>
+                  <div className="mt-1 text-[0.84rem] font-medium">{e.inquilino}</div>
+                  <div className="text-[0.7rem] text-ink-3">{e.imovel}</div>
+                  {e.respEntrega && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[0.68rem] text-ink-2">
+                      <Avatar nome={e.respEntrega.nome} cor={e.respEntrega.cor} tamanho={17} />
+                      entrega com {primeiroNome(e.respEntrega.nome)}
                     </div>
-                    <div className="mt-1.5 text-[0.86rem] font-medium">{e.inquilino}</div>
-                    <div className="text-[0.72rem] text-ink-3">{e.imovel}</div>
-                    {e.respEntrega && (
-                      <div className="mt-2 flex items-center gap-1.5 text-[0.7rem] text-ink-2">
-                        <Avatar nome={e.respEntrega.nome} cor={e.respEntrega.cor} tamanho={18} />
-                        entrega com {primeiroNome(e.respEntrega.nome)}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="card p-5 animate-fade-up" style={{ animationDelay: "200ms" }}>
-            <h2 className="mb-3.5 flex items-center gap-2 font-display text-[1.12rem]">
-              <Users size={15} className="text-brand" />
-              Agenda da equipe
-            </h2>
-            {porMembro.size === 0 ? (
-              <Vazio titulo="Sem tarefas para hoje." />
-            ) : (
-              <ul className="space-y-3.5">
-                {Array.from(porMembro.values()).map((lista) => {
-                  const membro = lista[0].responsavel;
-                  const feitas = lista.filter((t) => t.concluida).length;
-                  return (
-                    <li key={membro.id}>
-                      <div className="mb-1.5 flex items-center gap-2">
-                        <Avatar nome={membro.nome} cor={membro.cor} tamanho={22} />
-                        <span className="text-[0.8rem] font-medium">{primeiroNome(membro.nome)}</span>
-                        <span className="ml-auto font-mono text-[0.62rem] text-ink-3">
-                          {feitas}/{lista.length}
-                        </span>
-                      </div>
-                      <ul className="space-y-1 border-l border-[var(--hairline)] pl-3.5 ml-2.5">
-                        {lista.slice(0, 3).map((t) => (
-                          <li
-                            key={t.id}
-                            className={`text-[0.72rem] leading-snug ${
-                              t.concluida ? "text-ink-3 line-through" : "text-ink-2"
-                            }`}
-                          >
-                            {t.hora && <span className="font-mono text-ink-3">{t.hora} · </span>}
-                            {t.titulo}
-                          </li>
-                        ))}
-                        {lista.length > 3 && (
-                          <li className="text-[0.66rem] text-ink-3">+ {lista.length - 3} tarefas</li>
-                        )}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        </div>
-      </div>
-
-      {/* Gráfico + como funciona */}
-      <div className="mt-3.5 grid lg:grid-cols-3 gap-3.5">
-        <section className="card lg:col-span-2 p-5 animate-fade-up" style={{ animationDelay: "240ms" }}>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-display text-[1.12rem]">
-              <CalendarClock size={15} className="text-brand" />
-              Disparos automáticos — últimos 14 dias
-            </h2>
-          </div>
-          <ChartDisparos dados={serie} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        <section className="card p-5 animate-fade-up" style={{ animationDelay: "280ms" }}>
-          <h2 className="mb-4 font-display text-[1.12rem]">Como funciona</h2>
-          <ol className="space-y-4">
+        {/* Agenda da equipe */}
+        <section
+          className="card flex min-h-0 flex-col p-4 animate-fade-up lg:col-span-3"
+          style={{ animationDelay: "200ms" }}
+        >
+          <h2 className="mb-3 flex items-center gap-2 font-display text-[1.05rem]">
+            <Users size={14} className="text-brand" />
+            Agenda da equipe
+          </h2>
+          {porMembro.size === 0 ? (
+            <Vazio titulo="Sem tarefas para hoje." />
+          ) : (
+            <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 max-h-[420px] lg:max-h-none">
+              {Array.from(porMembro.values()).map((lista) => {
+                const membro = lista[0].responsavel;
+                const feitas = lista.filter((t) => t.concluida).length;
+                return (
+                  <li key={membro.id}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <Avatar nome={membro.nome} cor={membro.cor} tamanho={20} />
+                      <span className="text-[0.78rem] font-medium">{primeiroNome(membro.nome)}</span>
+                      <span className="ml-auto font-mono text-[0.6rem] text-ink-3">
+                        {feitas}/{lista.length}
+                      </span>
+                    </div>
+                    <ul className="ml-2.5 space-y-0.5 border-l border-[var(--hairline)] pl-3">
+                      {lista.slice(0, 3).map((t) => (
+                        <li
+                          key={t.id}
+                          className={`text-[0.7rem] leading-snug ${
+                            t.concluida ? "text-ink-3 line-through" : "text-ink-2"
+                          }`}
+                        >
+                          {t.hora && <span className="font-mono text-ink-3">{t.hora} · </span>}
+                          {t.titulo}
+                        </li>
+                      ))}
+                      {lista.length > 3 && (
+                        <li className="text-[0.64rem] text-ink-3">+ {lista.length - 3} tarefas</li>
+                      )}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* Gráfico */}
+        <section
+          className="card flex min-h-0 flex-col p-4 animate-fade-up lg:col-span-8"
+          style={{ animationDelay: "240ms" }}
+        >
+          <h2 className="mb-1.5 flex items-center gap-2 font-display text-[1.05rem]">
+            <CalendarClock size={14} className="text-brand" />
+            Disparos automáticos — últimos 14 dias
+          </h2>
+          <div className="min-h-0 flex-1">
+            <ChartDisparos dados={serie} />
+          </div>
+        </section>
+
+        {/* Como funciona */}
+        <section
+          className="card min-h-0 overflow-y-auto p-4 animate-fade-up lg:col-span-4"
+          style={{ animationDelay: "280ms" }}
+        >
+          <h2 className="mb-2.5 font-display text-[1.05rem]">Como funciona</h2>
+          <ol className="space-y-2">
             {[
-              {
-                icon: FileSignature,
-                titulo: "O contrato anda no quadro",
-                texto: "Cada mudança de etapa dispara a mensagem certa, na hora, para a pessoa certa.",
-              },
-              {
-                icon: Zap,
-                titulo: "Todo dia às 8h o robô roda",
-                texto: "Entregas do dia, lembretes de véspera, boletos e repasses saem sozinhos.",
-              },
-              {
-                icon: ClipboardCheck,
-                titulo: "A equipe recebe a agenda",
-                texto: "Cada um sabe o que fazer sem ninguém precisar lembrar ou cobrar.",
-              },
+              { icon: FileSignature, titulo: "O contrato anda no quadro — cada etapa dispara a mensagem certa" },
+              { icon: Zap, titulo: "Todo dia às 8h o robô roda — entregas, boletos, repasses e alertas" },
+              { icon: ClipboardCheck, titulo: "A equipe recebe a agenda — ninguém precisa lembrar ninguém" },
             ].map((s, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-brand/30 bg-brand-faint text-brand">
-                  <s.icon size={14} />
+              <li key={i} className="flex items-center gap-2.5">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-brand/30 bg-brand-faint text-brand">
+                  <s.icon size={13} />
                 </span>
-                <div>
-                  <div className="text-[0.84rem] font-medium">{s.titulo}</div>
-                  <div className="mt-0.5 text-[0.74rem] leading-relaxed text-ink-3">{s.texto}</div>
-                </div>
+                <div className="text-[0.73rem] leading-snug text-ink-2">{s.titulo}</div>
               </li>
             ))}
           </ol>
-          <div className="mt-5 rounded-xl border border-brand/25 bg-brand-faint px-4 py-3.5">
-            <div className="text-[0.66rem] uppercase tracking-[0.15em] text-brand/80 mb-1">
-              A conta que importa
-            </div>
-            <p className="text-[0.78rem] leading-relaxed text-ink-2">
-              Hoje a ficha é preenchida <span className="text-ink font-medium">3 vezes</span> (sistema,
-              papel e grupo de WhatsApp) e o pós-venda manual come até{" "}
-              <span className="text-ink font-medium">50% do tempo do corretor</span>. Com ficha digital
-              única e disparos automáticos, o corretor estima{" "}
-              <span className="text-brand font-semibold">dobrar a própria locação mensal</span>.
+          <div className="mt-3 rounded-xl border border-brand/25 bg-brand-faint px-3 py-2.5">
+            <p className="text-[0.7rem] leading-relaxed text-ink-2">
+              Hoje a ficha é preenchida <span className="text-ink font-medium">3×</span> e o pós-venda
+              come até <span className="text-ink font-medium">50% do tempo do corretor</span>. Com a
+              central, o corretor estima{" "}
+              <span className="font-semibold text-brand">dobrar a própria locação mensal</span>.
             </p>
           </div>
         </section>

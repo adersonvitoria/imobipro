@@ -174,6 +174,162 @@ export async function criarContrato(dados: NovoContrato) {
   return { ok: true, codigo, disparadas };
 }
 
+/** Ficha digital completa: valida tudo, cria contrato + pasta de documentos e gera o texto do contrato */
+export async function gerarContrato(d: import("@/lib/validar").FichaDados) {
+  const { validarCPF, validarEmail, validarTelefone, maiorDe18 } = await import("@/lib/validar");
+  const { fmtCurto, spToday, primeiroNome } = await import("@/lib/dates");
+
+  // revalidação essencial no servidor
+  const erros: string[] = [];
+  if (!d.locNome.trim() || !d.propNome.trim()) erros.push("nomes obrigatórios");
+  if (!validarCPF(d.locCpf) || !validarCPF(d.propCpf)) erros.push("CPF inválido");
+  if (!validarEmail(d.locEmail) || !validarEmail(d.propEmail)) erros.push("e-mail inválido");
+  if (!validarTelefone(d.locTelefone) || !validarTelefone(d.propTelefone)) erros.push("telefone inválido");
+  if (!maiorDe18(d.locNascimento) || !maiorDe18(d.propNascimento)) erros.push("data de nascimento inválida");
+  if (!d.matricula.trim() || !d.docs.matricula || !d.docs.iptu || !d.docs.luz) erros.push("documentos do imóvel");
+  if (d.recebimento === "PIX" && !d.pixChave.trim()) erros.push("chave PIX");
+  if (d.recebimento === "TRANSFERENCIA" && (!d.banco.trim() || !d.agencia.trim() || !d.conta.trim()))
+    erros.push("dados bancários");
+  if (erros.length > 0) return { ok: false as const, erros };
+
+  const cfg = await db.config.findFirstOrThrow();
+  const total = await db.contrato.count();
+  const codigo = `VB-${1053 + total}`;
+  const corretor = await db.membro.findFirst({ where: { papel: "CORRETOR", ativo: true } });
+
+  const contrato = await db.contrato.create({
+    data: {
+      codigo,
+      etapa: "FICHA_APROVADA",
+      imovel: d.imovelEndereco,
+      endereco: d.imovelEndereco,
+      bairro: d.imovelBairro || "Centro",
+      valor: Math.max(1, Math.round(d.valor)),
+      diaVencimento: d.diaVencimento || 10,
+      inquilino: d.locNome.trim(),
+      inquilinoZap: d.locTelefone,
+      proprietario: d.propNome.trim(),
+      proprietarioZap: d.propTelefone,
+      corretorId: corretor?.id ?? null,
+    },
+  });
+
+  await db.ficha.create({
+    data: {
+      contratoId: contrato.id,
+      locNome: d.locNome, locCpf: d.locCpf, locRg: d.locRg, locNascimento: d.locNascimento,
+      locTelefone: d.locTelefone, locEmail: d.locEmail, locEstadoCivil: d.locEstadoCivil,
+      locProfissao: d.locProfissao, locEndereco: d.locEndereco,
+      propNome: d.propNome, propCpf: d.propCpf, propRg: d.propRg, propNascimento: d.propNascimento,
+      propTelefone: d.propTelefone, propEmail: d.propEmail, propEstadoCivil: d.propEstadoCivil,
+      propProfissao: d.propProfissao, propEndereco: d.propEndereco,
+      recebimento: d.recebimento, pixChave: d.pixChave || null,
+      banco: d.banco || null, agencia: d.agencia || null, conta: d.conta || null,
+      imovelEndereco: d.imovelEndereco, imovelBairro: d.imovelBairro,
+      valor: Math.round(d.valor), diaVencimento: d.diaVencimento,
+      matricula: d.matricula, temCondominio: d.temCondominio,
+      condominioValor: d.temCondominio ? Math.round(d.condominioValor || 0) : null,
+    },
+  });
+
+  const documentos: { pessoa: string; pessoaZap: string; tipoPessoa: string; tipo: string; rotulo: string; arquivo: string }[] = [
+    { pessoa: d.locNome, pessoaZap: d.locTelefone, tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", arquivo: d.docs.locRg },
+    { pessoa: d.locNome, pessoaZap: d.locTelefone, tipoPessoa: "INQUILINO", tipo: "COMP_RESIDENCIA", rotulo: "Comprovante de residência", arquivo: d.docs.locResidencia },
+    { pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO", tipo: "RG_CNH", rotulo: "RG ou CNH", arquivo: d.docs.propRg },
+    { pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO", tipo: "COMP_RESIDENCIA", rotulo: "Comprovante de residência", arquivo: d.docs.propResidencia },
+    { pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO", tipo: "MATRICULA", rotulo: "Matrícula do imóvel", arquivo: d.docs.matricula },
+    { pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO", tipo: "IPTU", rotulo: "IPTU do imóvel", arquivo: d.docs.iptu },
+    { pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO", tipo: "CONTA_LUZ", rotulo: "Conta de luz (p/ transferência de titularidade)", arquivo: d.docs.luz },
+  ];
+  if (d.temCondominio && d.docs.condominio) {
+    documentos.push({
+      pessoa: d.propNome, pessoaZap: d.propTelefone, tipoPessoa: "PROPRIETARIO",
+      tipo: "CONDOMINIO", rotulo: "Boleto do condomínio", arquivo: d.docs.condominio,
+    });
+  }
+  for (const doc of documentos) {
+    await db.documento.create({
+      data: { ...doc, status: "RECEBIDO", recebidoEm: new Date(), contratoId: contrato.id },
+    });
+  }
+
+  await db.evento.create({
+    data: { contratoId: contrato.id, titulo: "Ficha digital validada — contrato gerado automaticamente" },
+  });
+  const paola = await db.membro.findFirst({ where: { papel: "CONTRATOS", ativo: true } });
+  if (paola) {
+    await db.tarefa.create({
+      data: {
+        titulo: `Conferir contrato gerado — ${d.locNome} (${codigo})`,
+        tipo: "OUTRO",
+        data: spToday(),
+        responsavelId: paola.id,
+        contratoId: contrato.id,
+      },
+    });
+  }
+
+  const disparadas = await dispararEtapa(contrato.id, "FICHA_APROVADA");
+
+  // ---- texto do contrato -------------------------------------------------
+  const hoje = new Date();
+  const dataExtenso = new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric", month: "long", year: "numeric", timeZone: "America/Sao_Paulo",
+  }).format(hoje);
+  const brlFmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+  const pagamento =
+    d.recebimento === "PIX"
+      ? `via PIX (chave: ${d.pixChave})`
+      : `via transferência bancária (banco ${d.banco}, agência ${d.agencia}, conta ${d.conta})`;
+
+  const contratoTexto = `CONTRATO DE LOCAÇÃO RESIDENCIAL — ${codigo}
+
+LOCADOR(A): ${d.propNome}, ${d.propEstadoCivil.toLowerCase()}, ${d.propProfissao.toLowerCase()}, portador(a) do RG nº ${d.propRg} e CPF nº ${d.propCpf}, nascido(a) em ${fmtCurto(d.propNascimento)}/${d.propNascimento.slice(0, 4)}, residente e domiciliado(a) em ${d.propEndereco}, telefone ${d.propTelefone}, e-mail ${d.propEmail}.
+
+LOCATÁRIO(A): ${d.locNome}, ${d.locEstadoCivil.toLowerCase()}, ${d.locProfissao.toLowerCase()}, portador(a) do RG nº ${d.locRg} e CPF nº ${d.locCpf}, nascido(a) em ${fmtCurto(d.locNascimento)}/${d.locNascimento.slice(0, 4)}, residente e domiciliado(a) em ${d.locEndereco}, telefone ${d.locTelefone}, e-mail ${d.locEmail}.
+
+ADMINISTRADORA: VeraBrokers Imóveis Ltda, com sede na ${cfg.lojaEndereco}.
+
+CLÁUSULA 1ª — DO OBJETO. Locação do imóvel situado em ${d.imovelEndereco}, bairro ${d.imovelBairro}, Gravataí/RS, matrícula nº ${d.matricula}, conforme documentação anexa (matrícula, IPTU e conta de luz).
+
+CLÁUSULA 2ª — DO PRAZO. O prazo da locação é de 30 (trinta) meses, iniciando-se na data de entrega das chaves.
+
+CLÁUSULA 3ª — DO ALUGUEL. O aluguel mensal é de ${brlFmt(d.valor)}, com vencimento todo dia ${d.diaVencimento} de cada mês.${
+    d.temCondominio && d.condominioValor
+      ? ` O condomínio, no valor aproximado de ${brlFmt(d.condominioValor)}, é de responsabilidade do(a) LOCATÁRIO(A).`
+      : ""
+  }
+
+CLÁUSULA 4ª — DO REPASSE. O repasse ao LOCADOR(A) será realizado pela ADMINISTRADORA ${pagamento}, até o 5º dia útil após a compensação do aluguel.
+
+CLÁUSULA 5ª — DA GARANTIA. A presente locação é garantida por SEGURO-FIANÇA contratado junto a seguradora parceira, nos termos da Lei 8.245/91.
+
+CLÁUSULA 6ª — DA TITULARIDADE DA ENERGIA. O(A) LOCATÁRIO(A) obriga-se a transferir a titularidade da conta de energia elétrica do imóvel para o seu nome em até 30 dias da entrega das chaves, conforme fatura anexa.
+
+CLÁUSULA 7ª — DO IPTU. O IPTU do imóvel, conforme guia anexa, será pago pelo(a) LOCATÁRIO(A) de forma mensal junto ao aluguel.
+
+CLÁUSULA 8ª — DO FORO. Fica eleito o foro da Comarca de Gravataí/RS.
+
+Gravataí, ${dataExtenso}.
+
+_______________________________          _______________________________
+${d.propNome}                            ${d.locNome}
+LOCADOR(A)                               LOCATÁRIO(A)
+
+_______________________________
+VeraBrokers Imóveis Ltda — Administradora
+Revisão jurídica: Fábio Antunes`;
+
+  revalidarTudo();
+  return {
+    ok: true as const,
+    codigo,
+    contratoTexto,
+    disparadas,
+    aviso: `${primeiroNome(d.locNome)} recebeu o WhatsApp de boas-vindas e a Paola recebeu a tarefa de conferência.`,
+  };
+}
+
 export async function toggleRegra(id: string, ativo: boolean) {
   await db.regra.update({ where: { id }, data: { ativo } });
   revalidarTudo();
