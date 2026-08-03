@@ -17,11 +17,11 @@ import ThemeToggle from "@/components/theme-toggle";
 const NAV = [
   { href: "/", label: "Hoje", icon: Sun },
   { href: "/analista", label: "Analista", icon: Sparkles },
+  { href: "/recepcao", label: "Recepção", icon: Bot },
   { href: "/contratos", label: "Contratos", icon: FileSignature },
   { href: "/mensagens", label: "Mensagens", icon: MessagesSquare },
   { href: "/equipe", label: "Equipe", icon: Users },
   { href: "/regras", label: "Régua", icon: Zap },
-  { href: "/recepcao", label: "Recepção", icon: Bot },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
