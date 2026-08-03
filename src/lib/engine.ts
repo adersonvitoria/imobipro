@@ -250,7 +250,70 @@ export async function rodarDisparosDiarios(origem: "CRON" | "MANUAL") {
     }
   }
 
-  // 7) Boletim da operação para a gestão
+  // 7) Alerta individual por demanda pendente do dia
+  const rAlerta = regras.get("ALERTA_DEMANDA");
+  if (rAlerta?.ativo) {
+    const pendentes = await db.tarefa.findMany({
+      where: { data: hoje, concluida: false },
+      include: { responsavel: true },
+      orderBy: { hora: "asc" },
+    });
+    for (const t of pendentes) {
+      await tenta({
+        regraTipo: rAlerta.tipo,
+        regraNome: rAlerta.nome,
+        paraNome: t.responsavel.nome,
+        paraZap: t.responsavel.whatsapp,
+        paraTipo: "EQUIPE",
+        origem,
+        membroId: t.responsavelId,
+        contratoId: t.contratoId ?? undefined,
+        dedupeKey: `ALERTA_DEMANDA:${t.id}:${hoje}`,
+        conteudo: render(rAlerta.template, {
+          ...base,
+          nome: primeiroNome(t.responsavel.nome),
+          demanda: t.titulo,
+          hora: t.hora ?? "sem horário fixo",
+        }),
+      });
+    }
+  }
+
+  // 8) Alerta de contas do dia (a pagar de hoje + tudo que está em atraso)
+  const rConta = regras.get("ALERTA_CONTA");
+  if (rConta?.ativo) {
+    const financeiro = await db.membro.findFirst({ where: { papel: "FINANCEIRO", ativo: true } });
+    if (financeiro) {
+      const contas = await db.lancamento.findMany({
+        where: { status: "ABERTO", vencimento: { lte: hoje } },
+        orderBy: { vencimento: "asc" },
+      });
+      for (const l of contas) {
+        const atrasada = l.vencimento < hoje;
+        await tenta({
+          regraTipo: rConta.tipo,
+          regraNome: rConta.nome,
+          paraNome: financeiro.nome,
+          paraZap: financeiro.whatsapp,
+          paraTipo: "EQUIPE",
+          origem,
+          membroId: financeiro.id,
+          dedupeKey: `ALERTA_CONTA:${l.id}:${hoje}`,
+          conteudo: render(rConta.template, {
+            ...base,
+            nome: primeiroNome(financeiro.nome),
+            tipo: l.tipo === "PAGAR" ? "📤 A pagar" : "📥 A receber",
+            descricao: l.descricao,
+            contraparte: l.contraparte,
+            valor: brl(l.valor),
+            vencimento: atrasada ? `${fmtCurto(l.vencimento)} — *em atraso* ⚠️` : "hoje",
+          }),
+        });
+      }
+    }
+  }
+
+  // 9) Boletim da operação para a gestão
   const rBoletim = regras.get("BOLETIM_GESTAO");
   if (rBoletim?.ativo) {
     const { coletarSnapshot, resumoBoletim } = await import("./analista");

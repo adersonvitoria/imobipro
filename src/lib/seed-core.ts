@@ -96,7 +96,21 @@ export async function seedDemo(db: PrismaClient) {
         "Olá {{proprietario}}! 💰 Seu repasse do imóvel *{{imovel}}* foi processado hoje e cai em conta em até 1 dia útil. Extrato disponível na {{imobiliaria}}. Obrigado pela parceria!",
     },
     {
-      tipo: "ETAPA_FICHA", grupo: "INSTANTANEO", ordem: 7, destino: "INQUILINO",
+      tipo: "ALERTA_DEMANDA", grupo: "DIARIO", ordem: 7, hora: "08:10", destino: "EQUIPE",
+      nome: "Alerta por demanda do dia",
+      descricao: "Cada demanda pendente do dia vira um alerta individual no WhatsApp do responsável — nada passa batido.",
+      template:
+        "⏰ Alerta de demanda, {{nome}}!\n\n📌 *{{demanda}}*\n🗓 Hoje · {{hora}}\n\nQuando concluir, marque ✅ na sua agenda do ImobiPRO. — {{imobiliaria}}",
+    },
+    {
+      tipo: "ALERTA_CONTA", grupo: "DIARIO", ordem: 8, hora: "08:15", destino: "EQUIPE",
+      nome: "Alerta de contas do dia",
+      descricao: "Contas a pagar vencendo hoje e recebimentos em atraso chegam um a um no WhatsApp do financeiro.",
+      template:
+        "💸 {{nome}}, conta no radar de hoje:\n\n{{tipo}}: *{{descricao}}*\n👤 {{contraparte}}\n💰 {{valor}} · vencimento: {{vencimento}}\n\nRegistrado no ImobiPRO. — {{imobiliaria}}",
+    },
+    {
+      tipo: "ETAPA_FICHA", grupo: "INSTANTANEO", ordem: 9, destino: "INQUILINO",
       nome: "Ficha aprovada",
       descricao: "Dispara na hora em que a ficha é aprovada no sistema.",
       template:

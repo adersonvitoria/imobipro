@@ -24,6 +24,10 @@ const SAMPLE: Record<string, string> = {
   lista: "• 09:00 — Entrega de chaves — Camila Ferreira\n• 14:00 — Vistoria de entrada — Felipe Xavier",
   imobiliaria: "VeraBrokers",
   repasse: "dia 5",
+  demanda: "Entrega de chaves — Henrique Ott (Apto 501 · Ed. Firenze)",
+  tipo: "📤 A pagar",
+  descricao: "Repasse — Apto 405 · Ed. Lucerna",
+  contraparte: "Dona Iara Peixoto",
   resumo:
     "🔑 Entregas de chave hoje (2):\n   • 10:30 — Henrique (Apto 501) c/ Marilice\n   • 15:00 — Débora (Casa · Pq. dos Anjos) c/ Diego\n💰 Carteira ativa: R$ 5.930/mês (4 contratos)\n📥 A receber: R$ 9.880 em aberto\n📤 A pagar: R$ 6.497\n🧾 NFS-e: 4 emitidas no mês\n✅ Nenhum alerta — operação redonda",
 };
