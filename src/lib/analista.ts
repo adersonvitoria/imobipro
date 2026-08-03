@@ -631,6 +631,22 @@ export function respostaNotas(s: Snapshot): string {
   return partes.join("") + rodape(s);
 }
 
+export function respostaProjecao(s: Snapshot): string {
+  return (
+    `📈 *Projeção de aumento do faturamento mensal com a plataforma*` +
+    `\n\n*Base — números citados pela própria equipe:* a imobiliária loca ~*R$ 100 mil/mês* em novos contratos (os dois corretores top fecham ~R$ 30 mil cada). O pós-venda manual consome *~30%* do tempo do comercial e a burocracia da ficha (preenchida 3×: sistema, papel e grupo) mais *~20%* — até metade do mês fora da venda.` +
+    `\n\n🔴 *Pior cenário: +R$ 12 mil/mês (+12%)*` +
+    `\n  Mês fraco (R$ 10 mil/corretor): recuperando só os 30% do pós-venda → +R$ 3 mil por corretor × 4 corretores. É a conta mínima que o próprio comercial fez.` +
+    `\n\n🟡 *Cenário médio: +R$ 30 mil/mês (+30%)*` +
+    `\n  Sobre a média real de R$ 100 mil: 30% de tempo devolvido ao comercial vira +R$ 30 mil em novas locações, todo mês.` +
+    `\n\n🟢 *Melhor cenário: +R$ 50 mil/mês (+50%)*` +
+    `\n  Pós-venda automático + ficha única (fim das 3 horas de burocracia): ~50% de capacidade a mais. O corretor estima ir de R$ 20 mil para *R$ 40 mil* pessoais — "não tem dúvida".` +
+    `\n\n💰 *Efeito recorrente:* cada R$ 10 mil a mais locados viram ~*R$ 1 mil/mês permanentes* de taxa de administração — o ganho se acumula mês após mês. E proprietário bem respondido não tira a carteira da imobiliária.` +
+    `\n\n_Estimativas construídas com os números ditos pela equipe; com a plataforma no ar, o Analista passa a medir o realizado._` +
+    rodape(s)
+  );
+}
+
 export function respostaDocumentos(s: Snapshot): string {
   const partes: string[] = [`📎 *Pasta digital — documentos*`];
   if (s.documentos.pendentes > 0) {
@@ -807,6 +823,7 @@ function respostaAjuda(s: Snapshot): string {
     `\n  • *"Sinistros"* — seguro-fiança: status, protocolo e previsão` +
     `\n  • *"Cobranças"* — inadimplência: esteira, status e previsão` +
     `\n  • *"Documentos"* — pasta digital: o que falta de quem` +
+    `\n  • *"Projeção de faturamento"* — pior, médio e melhor cenário com a plataforma` +
     `\n  • *"Carga da equipe"* — quem está com o quê` +
     `\n  • *"Disparos de hoje"* — comunicação automática` +
     `\n  • *"Riscos e pendências"* — o que merece atenção` +
@@ -825,13 +842,14 @@ export function responder(pergunta: string, s: Snapshot): string {
   const p = normalizar(pergunta);
   const tem = (...ks: string[]) => ks.some((k) => p.includes(k));
 
+  if (tem("projec", "faturamento", "aumento", "cenario", "quanto pode", "crescer", "potencial", "roi", "ganho")) return respostaProjecao(s);
   if (tem("nota", "nfs", "fiscal", "imposto", "emissao", "emitir")) return respostaNotas(s);
   if (tem("documento", "docs", "pasta", "comprovante", "procuracao", "apolice")) return respostaDocumentos(s);
   if (tem("cobranc", "inadimpl", "juridic", "calote", "devedor", "nao pagou")) return respostaCobrancas(s);
   if (tem("sinistro", "seguradora", "seguro", "loft", "porto", "fianca")) return respostaSinistros(s);
   if (tem("entrega", "chave", "retirada", "vistoria")) return respostaEntregas(s);
   if (tem("proprietario", "dono do imovel", "repasse", "desocupacao", "milton")) return respostaProprietarios(s);
-  if (tem("financeiro", "boleto", "venciment", "receita", "carteira", "faturamento", "dinheiro", "aluguel", "inadimpl", "valor", "pagar", "receber", "contas", "caixa", "fluxo", "saldo", "vencid")) return respostaFinanceiro(s);
+  if (tem("financeiro", "boleto", "venciment", "receita", "carteira", "dinheiro", "aluguel", "inadimpl", "valor", "pagar", "receber", "contas", "caixa", "fluxo", "saldo", "vencid")) return respostaFinanceiro(s);
   if (tem("equipe", "time", "carga", "sobrecarregad", "tarefa", "agenda", "quem esta", "quem faz")) return respostaEquipe(s);
   if (tem("disparo", "mensagen", "whatsapp", "comunicac", "envio")) return respostaDisparos(s);
   if (tem("risco", "pendencia", "alerta", "problema", "atencao", "gargalo", "atrasad")) return respostaRiscos(s);

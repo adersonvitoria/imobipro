@@ -9,6 +9,7 @@ type Msg = { de: "ai" | "user"; texto: string; hora?: string };
 
 const CHIPS = [
   "Resumo do dia",
+  "Projeção de faturamento",
   "Como estão as entregas?",
   "Contas a pagar e receber",
   "Documentos pendentes",

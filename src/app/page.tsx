@@ -299,11 +299,26 @@ export default async function Hoje() {
             ))}
           </ol>
           <div className="mt-3 rounded-xl border border-brand/25 bg-brand-faint px-3 py-2.5">
-            <p className="text-[0.7rem] leading-relaxed text-ink-2">
-              Hoje a ficha é preenchida <span className="text-ink font-medium">3×</span> e o pós-venda
-              come até <span className="text-ink font-medium">50% do tempo do corretor</span>. Com a
-              central, o corretor estima{" "}
-              <span className="font-semibold text-brand">dobrar a própria locação mensal</span>.
+            <div className="mb-1.5 text-[0.6rem] uppercase tracking-[0.14em] text-brand/80">
+              Projeção de faturamento com a plataforma
+            </div>
+            <div className="space-y-1 text-[0.7rem]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ink-3">🔴 Pior cenário</span>
+                <span className="font-mono font-medium text-ink">+R$ 12 mil/mês</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ink-3">🟡 Cenário médio</span>
+                <span className="font-mono font-medium text-ink">+R$ 30 mil/mês</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ink-3">🟢 Melhor cenário</span>
+                <span className="font-mono font-semibold text-brand">+R$ 50 mil/mês</span>
+              </div>
+            </div>
+            <p className="mt-1.5 text-[0.62rem] leading-snug text-ink-3">
+              Base: R$ 100 mil/mês locados pela equipe · pós-venda ~30% + burocracia ~20% do tempo.
+              Detalhes no <span className="text-brand">Analista</span>.
             </p>
           </div>
         </section>
