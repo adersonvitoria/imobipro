@@ -11,6 +11,7 @@ import {
   MessagesSquare,
   Sparkles,
   Sun,
+  TrendingUp,
   Users,
   Zap,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/mensagens", label: "Mensagens", icon: MessagesSquare },
   { href: "/equipe", label: "Equipe", icon: Users },
   { href: "/regras", label: "Régua", icon: Zap },
+  { href: "/projecao", label: "Projeção", icon: TrendingUp, soDesktop: true },
 ];
 
 export default function Shell({ children }: { children: React.ReactNode }) {
