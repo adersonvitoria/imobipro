@@ -282,6 +282,32 @@ export async function seedDemo(db: PrismaClient) {
     },
   });
 
+  // Mais fichas aprovadas e contratos em assinatura (colunas cheias no quadro)
+  const extras = [
+    { codigo: "VB-1054", etapa: "FICHA_APROVADA", imovel: "Apto 105 · Res. Jardim das Flores", endereco: "Rua das Azaleias, 98", bairro: "Vera Cruz", valor: 1180, venc: 10, inquilino: "Bruna Lopes", zapI: zap(61), proprietario: "Sr. Otto Kranz", zapP: zap(62), corretorId: gustavo.id },
+    { codigo: "VB-1055", etapa: "FICHA_APROVADA", imovel: "Casa 2 dorm · Parque dos Anjos", endereco: "Rua Missões, 415", bairro: "Parque dos Anjos", valor: 1420, venc: 5, inquilino: "Carlos Eduardo Mota", zapI: zap(63), proprietario: "Sra. Neusa Balbinot", zapP: zap(64), corretorId: eduardo.id },
+    { codigo: "VB-1056", etapa: "FICHA_APROVADA", imovel: "Apto 402 · Ed. Monte Carlo", endereco: "Rua Anápio Gomes, 720", bairro: "Centro", valor: 1980, venc: 15, inquilino: "Fernanda Riedel", zapI: zap(65), proprietario: "Sr. Hélio Wartchow", zapP: zap(66), corretorId: gustavo.id },
+    { codigo: "VB-1057", etapa: "ASSINATURA", imovel: "Sobrado 3 dorm · São Vicente", endereco: "Rua Guaporé, 233", bairro: "São Vicente", valor: 2150, venc: 10, inquilino: "Paulo Henrique Dias", zapI: zap(67), proprietario: "Sra. Carmen Souto", zapP: zap(68), corretorId: eduardo.id },
+    { codigo: "VB-1058", etapa: "ASSINATURA", imovel: "Kitnet 08 · Ed. Estação", endereco: "Rua Dr. Luiz Bastos do Prado, 1520", bairro: "Centro", valor: 850, venc: 10, inquilino: "Vanessa Krüger", zapI: zap(69), proprietario: "Sr. Ari Fensterseifer", zapP: zap(70), corretorId: gustavo.id },
+  ];
+  const extrasCriados: Record<string, string> = {};
+  for (const e of extras) {
+    const c = await db.contrato.create({
+      data: {
+        codigo: e.codigo, etapa: e.etapa, imovel: e.imovel, endereco: e.endereco, bairro: e.bairro,
+        valor: e.valor, diaVencimento: e.venc, inquilino: e.inquilino, inquilinoZap: e.zapI,
+        proprietario: e.proprietario, proprietarioZap: e.zapP, corretorId: e.corretorId,
+      },
+    });
+    extrasCriados[e.codigo] = c.id;
+    await db.evento.create({
+      data: {
+        contratoId: c.id,
+        titulo: e.etapa === "ASSINATURA" ? "Contrato enviado para assinatura digital" : "Ficha aprovada pelo administrativo",
+      },
+    });
+  }
+
   // Ativos — 1 deles vence exatamente em 3 dias (dispara o boleto na demo)
   const ativos = [
     { codigo: "VB-0987", inquilino: "Rodrigo Malta", imovel: "Apto 405 · Ed. Lucerna", endereco: "Rua Balduíno Righi, 66", bairro: "Centro", valor: 1500, venc: dayOfMonth(addDays(hoje, 3)), proprietario: "Dona Iara Peixoto" },
@@ -485,6 +511,12 @@ export async function seedDemo(db: PrismaClient) {
     // Tainá (VB-1050 · contrato assinado) — falta anexar o contrato assinado
     { contratoId: contratoAssinado.id, pessoa: "Tainá Rocha", pessoaZap: zap(17), tipoPessoa: "INQUILINO", tipo: "APOLICE_SEGURO", rotulo: "Apólice do seguro-fiança", status: "RECEBIDO", arquivo: "apolice-taina.pdf" },
     { contratoId: contratoAssinado.id, pessoa: "Tainá Rocha", pessoaZap: zap(17), tipoPessoa: "INQUILINO", tipo: "CONTRATO_ASSINADO", rotulo: "Contrato assinado (via digital)", status: "PENDENTE" },
+    // Bruna (VB-1054 · ficha aprovada) — falta o comprovante de renda
+    { contratoId: extrasCriados["VB-1054"], pessoa: "Bruna Lopes", pessoaZap: zap(61), tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-bruna.pdf" },
+    { contratoId: extrasCriados["VB-1054"], pessoa: "Bruna Lopes", pessoaZap: zap(61), tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "PENDENTE" },
+    // Carlos (VB-1055 · ficha aprovada) — pasta completa
+    { contratoId: extrasCriados["VB-1055"], pessoa: "Carlos Eduardo Mota", pessoaZap: zap(63), tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-carlos.pdf" },
+    { contratoId: extrasCriados["VB-1055"], pessoa: "Carlos Eduardo Mota", pessoaZap: zap(63), tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "APROVADO", arquivo: "renda-carlos.pdf" },
     // Camila (VB-1041 · entrega amanhã) — pasta completa
     { contratoId: contratosAmanha[0].id, pessoa: "Camila Ferreira", pessoaZap: contratosAmanha[0].inquilinoZap, tipoPessoa: "INQUILINO", tipo: "RG_CNH", rotulo: "RG ou CNH", status: "APROVADO", arquivo: "rg-camila.pdf" },
     { contratoId: contratosAmanha[0].id, pessoa: "Camila Ferreira", pessoaZap: contratosAmanha[0].inquilinoZap, tipoPessoa: "INQUILINO", tipo: "COMP_RENDA", rotulo: "Comprovante de renda", status: "APROVADO", arquivo: "renda-camila.pdf" },
